@@ -23,6 +23,7 @@ var (
 	ErrUserIsBlocked        = errors.New("user is blocked")
 	ErrNoActionRequired     = errors.New("no action required")
 	ErrInvalidPassword      = errors.New("invalid password")
+	ErrUnknownClient        = errors.New("unknown client")
 )
 
 type UnknownAuditEventError struct {
