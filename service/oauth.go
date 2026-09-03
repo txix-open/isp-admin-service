@@ -10,9 +10,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-type sudirRepo interface {
-	GetToken(ctx context.Context, creds entity.ClientSetting) (*entity.SudirTokenResponse, error)
-	GetUser(ctx context.Context, accessToken string) (*entity.SudirUserResponse, error)
+type oauthRepo interface {
+	GetToken(ctx context.Context, creds entity.ClientSetting) (*entity.OauthTokenResponse, error)
+	GetUser(ctx context.Context, accessToken string) (*entity.OauthUserResponse, error)
 }
 
 type roleRepo interface {
@@ -20,30 +20,30 @@ type roleRepo interface {
 	InsertRole(ctx context.Context, role entity.Role) (*entity.Role, error)
 }
 
-type Sudir struct {
-	sudirRepo      sudirRepo
-	clientSettings map[string]conf.SudirClientConfig
+type Oauth struct {
+	oauthRepo      oauthRepo
+	clientSettings map[string]conf.OauthClientConfig
 }
 
-func NewSudir(settings []conf.SudirClientConfig, sudirRepo sudirRepo) (Sudir, error) {
-	clientSettings := make(map[string]conf.SudirClientConfig, len(settings))
+func NewOauth(settings []conf.OauthClientConfig, oauthRepo oauthRepo) (Oauth, error) {
+	clientSettings := make(map[string]conf.OauthClientConfig, len(settings))
 	for i, setting := range settings {
 		_, ok := clientSettings[setting.ClientName]
 		if ok {
-			return Sudir{}, errors.Errorf("client setting [%d] has non-unique client name", i)
+			return Oauth{}, errors.Errorf("client setting [%d] has non-unique client name", i)
 		}
 		clientSettings[setting.ClientName] = setting
 	}
 
-	return Sudir{
-		sudirRepo:      sudirRepo,
+	return Oauth{
+		oauthRepo:      oauthRepo,
 		clientSettings: clientSettings,
 	}, nil
 }
 
-func (s Sudir) Authenticate(ctx context.Context, req domain.LoginSudirRequest, roleRepo roleRepo) (*entity.SudirUser, error) {
+func (s Oauth) Authenticate(ctx context.Context, req domain.LoginOauthRequest, roleRepo roleRepo) (*entity.OauthUser, error) {
 	if len(s.clientSettings) == 0 {
-		return nil, domain.ErrSudirAuthIsMissed
+		return nil, domain.ErrOauthIsMissed
 	}
 
 	setting, ok := s.clientSettings[req.ClientName]
@@ -57,20 +57,20 @@ func (s Sudir) Authenticate(ctx context.Context, req domain.LoginSudirRequest, r
 		ClientSecret: setting.ClientSecret,
 		RedirectURI:  setting.RedirectURI,
 	}
-	tokenResponse, err := s.sudirRepo.GetToken(ctx, creds)
+	tokenResponse, err := s.oauthRepo.GetToken(ctx, creds)
 	switch {
 	case err != nil:
 		return nil, errors.WithMessage(err, "get token")
-	case tokenResponse.SudirAuthError != nil:
-		return nil, errors.WithMessage(tokenResponse.SudirAuthError, "get token")
+	case tokenResponse.OauthAuthError != nil:
+		return nil, errors.WithMessage(tokenResponse.OauthAuthError, "get token")
 	}
 
-	user, err := s.sudirRepo.GetUser(ctx, tokenResponse.AccessToken)
+	user, err := s.oauthRepo.GetUser(ctx, tokenResponse.AccessToken)
 	switch {
 	case err != nil:
 		return nil, errors.WithMessage(err, "get user")
-	case user.SudirAuthError != nil:
-		return nil, errors.WithMessage(user.SudirAuthError, "get user")
+	case user.OauthAuthError != nil:
+		return nil, errors.WithMessage(user.OauthAuthError, "get user")
 	}
 	email := user.Email
 	if email == "" {
@@ -88,9 +88,9 @@ func (s Sudir) Authenticate(ctx context.Context, req domain.LoginSudirRequest, r
 		}
 	}
 
-	return &entity.SudirUser{
+	return &entity.OauthUser{
 		RoleIds:     rolesIds,
-		SudirUserId: user.Sub,
+		OauthUserId: user.Sub,
 		FirstName:   user.GivenName,
 		LastName:    user.FamilyName,
 		FullName:    user.Name,

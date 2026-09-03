@@ -50,9 +50,9 @@ func endpointDescriptors(c Controllers) []cluster.EndpointDescriptor {
 			Handler: c.Auth.Login,
 		},
 		{
-			Path:    "admin/auth/login_with_sudir",
+			Path:    "admin/auth/login_with_oauth",
 			Inner:   false,
-			Handler: c.Auth.LoginWithSudir,
+			Handler: c.Auth.LoginWithOauth,
 		},
 		{
 			Path:    "admin/auth/logout",
@@ -189,9 +189,9 @@ func endpointDescriptors(c Controllers) []cluster.EndpointDescriptor {
 			Handler: c.Secure.Authorize,
 		},
 		{
-			Path:    "admin/ui_settings/sudir",
+			Path:    "admin/ui_settings/oauth",
 			Inner:   false,
-			Handler: c.UiSettings.SudirSettings,
+			Handler: c.UiSettings.OauthSettings,
 		},
 	}
 }

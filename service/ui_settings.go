@@ -10,12 +10,12 @@ import (
 )
 
 type UiSettings struct {
-	sudirBaseUrl string
-	settings     map[string]conf.SudirClientConfig
+	oauthBaseUrl string
+	settings     map[string]conf.OauthClientConfig
 }
 
-func NewUiSettings(sudirBaseUrl string, settings []conf.SudirClientConfig) UiSettings {
-	settingsMap := make(map[string]conf.SudirClientConfig, len(settings))
+func NewUiSettings(oauthBaseUrl string, settings []conf.OauthClientConfig) UiSettings {
+	settingsMap := make(map[string]conf.OauthClientConfig, len(settings))
 	for _, setting := range settings {
 		if setting.UiSetting == nil {
 			continue
@@ -23,12 +23,12 @@ func NewUiSettings(sudirBaseUrl string, settings []conf.SudirClientConfig) UiSet
 		settingsMap[setting.ClientName] = setting
 	}
 	return UiSettings{
-		sudirBaseUrl: sudirBaseUrl,
+		oauthBaseUrl: oauthBaseUrl,
 		settings:     settingsMap,
 	}
 }
 
-func (s UiSettings) SudirSettings(ctx context.Context, req domain.ClientNameRequest) (*domain.UiSudirSetting, error) {
+func (s UiSettings) OauthSettings(ctx context.Context, req domain.ClientNameRequest) (*domain.UiOauthSetting, error) {
 	setting, ok := s.settings[req.ClientName]
 	if !ok {
 		return nil, domain.ErrUnknownClient
@@ -48,7 +48,7 @@ func (s UiSettings) SudirSettings(ctx context.Context, req domain.ClientNameRequ
 	if err != nil {
 		return nil, errors.Errorf("build url for logout: %w", err)
 	}
-	return &domain.UiSudirSetting{
+	return &domain.UiOauthSetting{
 		LoginUrl:  loginUrl,
 		LogoutUrl: logoutUrl,
 	}, nil
@@ -60,7 +60,7 @@ func (s UiSettings) buildUrl(methodPath string, additionalQuery map[string]strin
 		return "", errors.Errorf("parse method path")
 	}
 
-	joined, err := url.JoinPath(s.sudirBaseUrl, method.Path)
+	joined, err := url.JoinPath(s.oauthBaseUrl, method.Path)
 	if err != nil {
 		return "", errors.Errorf("join method path and baseUrl")
 	}

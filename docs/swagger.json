@@ -64,7 +64,7 @@
                 }
             }
         },
-        "/auth/login_with_sudir": {
+        "/auth/login_with_oauth": {
             "post": {
                 "description": "Авторизация с получением токена администратора",
                 "consumes": [
@@ -76,7 +76,7 @@
                 "tags": [
                     "auth"
                 ],
-                "summary": "Авторизация по авторизационному коду от СУДИР",
+                "summary": "Авторизация по авторизационному коду от OAuth",
                 "parameters": [
                     {
                         "description": "Тело запроса",
@@ -84,7 +84,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/domain.LoginSudirRequest"
+                            "$ref": "#/definitions/domain.LoginOauthRequest"
                         }
                     }
                 ],
@@ -102,7 +102,7 @@
                         }
                     },
                     "412": {
-                        "description": "Авторизация СУДИР не настроена на сервере",
+                        "description": "Авторизация OAuth не настроена на сервере",
                         "schema": {
                             "$ref": "#/definitions/domain.GrpcError"
                         }
@@ -761,9 +761,9 @@
                 }
             }
         },
-        "/ui_settings/sudir": {
+        "/ui_settings/oauth": {
             "post": {
-                "description": "Получение настроек для ui для авторизации через СУДИР",
+                "description": "Получение настроек для ui для авторизации через OAuth",
                 "consumes": [
                     "application/json"
                 ],
@@ -773,7 +773,7 @@
                 "tags": [
                     "ui_settings"
                 ],
-                "summary": "Получение настроек для ui для авторизации через СУДИР",
+                "summary": "Получение настроек для ui для авторизации через OAuth",
                 "parameters": [
                     {
                         "description": "Тело запроса",
@@ -789,7 +789,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/domain.UiSudirSetting"
+                            "$ref": "#/definitions/domain.UiOauthSetting"
                         }
                     },
                     "400": {
@@ -1698,6 +1698,23 @@
                 }
             }
         },
+        "domain.LoginOauthRequest": {
+            "type": "object",
+            "required": [
+                "authCode",
+                "clientName"
+            ],
+            "properties": {
+                "authCode": {
+                    "description": "Код для авторизации у OAuth-провайдера",
+                    "type": "string"
+                },
+                "clientName": {
+                    "description": "Уникальное имя конфигурации клиента",
+                    "type": "string"
+                }
+            }
+        },
         "domain.LoginRequest": {
             "type": "object",
             "required": [
@@ -1728,23 +1745,6 @@
                 },
                 "token": {
                     "description": "Токен",
-                    "type": "string"
-                }
-            }
-        },
-        "domain.LoginSudirRequest": {
-            "type": "object",
-            "required": [
-                "authCode",
-                "clientName"
-            ],
-            "properties": {
-                "authCode": {
-                    "description": "Код для авторизации в СУДИР",
-                    "type": "string"
-                },
-                "clientName": {
-                    "description": "Уникальное имя конфигурации клиента",
                     "type": "string"
                 }
             }
@@ -2033,11 +2033,11 @@
                 }
             }
         },
-        "domain.UiSudirSetting": {
+        "domain.UiOauthSetting": {
             "type": "object",
             "properties": {
                 "loginUrl": {
-                    "description": "URL для получения authCode для авторизации через СУДИР",
+                    "description": "URL для получения authCode для авторизации через OAuth",
                     "type": "string"
                 },
                 "logoutUrl": {

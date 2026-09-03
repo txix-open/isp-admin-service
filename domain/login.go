@@ -14,8 +14,8 @@ type LoginRequest struct {
 	Password string ` validate:"required"` // Пароль
 }
 
-type LoginSudirRequest struct {
-	AuthCode   string `validate:"required"` // Код для авторизации в СУДИР
+type LoginOauthRequest struct {
+	AuthCode   string `validate:"required"` // Код для авторизации у OAuth-провайдера
 	ClientName string `validate:"required"` // Уникальное имя конфигурации клиента
 }
 

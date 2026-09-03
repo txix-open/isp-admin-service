@@ -27,7 +27,7 @@ type Assembly struct {
 	boot     *bootstrap.Bootstrap
 	db       *dbrx.Client
 	server   *grpc.Server
-	sudirCli *httpcli.Client
+	oauthCli *httpcli.Client
 	logger   *log.Adapter
 	bgjobCli *bgjobx.Client
 }
@@ -45,7 +45,7 @@ func New(boot *bootstrap.Bootstrap) (*Assembly, error) {
 		db:       db,
 		server:   grpc.NewServer(),
 		logger:   logger,
-		sudirCli: httpclix.Default(httpcli.WithMiddlewares(httpclix.Log(wrappedLogger))),
+		oauthCli: httpclix.Default(httpcli.WithMiddlewares(httpclix.Log(wrappedLogger))),
 		bgjobCli: bgjobCli,
 	}, nil
 }
@@ -67,13 +67,13 @@ func (a *Assembly) ReceiveConfig(ctx context.Context, remoteConfig []byte) error
 		a.logger.Fatal(ctx, errors.WithMessage(err, "upgrade db client"))
 	}
 
-	sudirBaseUrl := ""
-	if newCfg.SudirAuth != nil {
-		sudirBaseUrl = newCfg.SudirAuth.Host
+	oauthBaseUrl := ""
+	if newCfg.Oauth != nil {
+		oauthBaseUrl = newCfg.Oauth.Host
 	}
-	a.sudirCli.GlobalRequestConfig().BaseUrl = sudirBaseUrl
+	a.oauthCli.GlobalRequestConfig().BaseUrl = oauthBaseUrl
 
-	locator := NewLocator(a.logger, a.sudirCli, a.db)
+	locator := NewLocator(a.logger, a.oauthCli, a.db)
 	config, err := locator.Config(ctx, newCfg, time.Minute)
 	if err != nil {
 		a.logger.Fatal(ctx, errors.WithMessage(err, "locator config"))

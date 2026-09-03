@@ -126,9 +126,9 @@ func (s *UserTestSuite) TestGetProfileNotFound() {
 	s.Require().Equal(codes.NotFound, st.Code())
 }
 
-func (s *UserTestSuite) TestGetProfileSudir() {
-	id := InsertSudirUser(s.db, entity.SudirUser{
-		SudirUserId: "sudirUser1",
+func (s *UserTestSuite) TestGetProfileOauth() {
+	id := InsertOauthUser(s.db, entity.OauthUser{
+		OauthUserId: "oauthUser1",
 		FirstName:   "name",
 		LastName:    "surname",
 		FullName:    "surname name",
@@ -384,9 +384,9 @@ func (s *UserTestSuite) TestCreateUserHappyPath() {
 	time.Sleep(1 * time.Second) // wait for go SaveAuditAsync()
 }
 
-func (s *UserTestSuite) TestCreateUserWithSameEmailSudirHappyPath() {
-	firstSudirId := "user_a"
-	admin := InsertSudirUser(s.db, entity.SudirUser{SudirUserId: firstSudirId, Email: "a2@a.ru"})
+func (s *UserTestSuite) TestCreateUserWithSameEmailOauthHappyPath() {
+	firstOauthId := "user_a"
+	admin := InsertOauthUser(s.db, entity.OauthUser{OauthUserId: firstOauthId, Email: "a2@a.ru"})
 
 	preCount := 0
 	s.db.Must().SelectRow(&preCount, "select count(*) from users")
@@ -458,13 +458,13 @@ func (s *AuthTestSuite) TestUpdateUserHappyPath() {
 	time.Sleep(1 * time.Second) // wait for go SaveAuditAsync()
 }
 
-func (s *AuthTestSuite) TestUpdateSudirUserHappyPath() {
-	id := InsertSudirUser(s.db, entity.SudirUser{SudirUserId: "123", Email: "sudir@a.ru", FullName: "surname name patronymic"})
+func (s *AuthTestSuite) TestUpdateOauthUserHappyPath() {
+	id := InsertOauthUser(s.db, entity.OauthUser{OauthUserId: "123", Email: "oauth@a.ru", FullName: "surname name patronymic"})
 	req := domain.UpdateUserRequest{
 		Id:        id,
 		FirstName: "nameUpd",
 		LastName:  "surnameUpd",
-		Email:     "sudir@a.ru",
+		Email:     "oauth@a.ru",
 	}
 	response := domain.User{}
 	err := s.grpcCli.
@@ -506,12 +506,12 @@ func (s *AuthTestSuite) TestUpdateUserAlreadyExist() {
 	s.Require().Equal(codes.AlreadyExists, st.Code())
 }
 
-func (s *AuthTestSuite) TestUpdateUserWithSudirAlreadyExist() {
-	firstSudirId := "user_a"
-	secondSudirId := "user_b"
+func (s *AuthTestSuite) TestUpdateUserWithOauthAlreadyExist() {
+	firstOauthId := "user_a"
+	secondOauthId := "user_b"
 
-	admin := InsertSudirUser(s.db, entity.SudirUser{SudirUserId: firstSudirId, Email: "a_exists@a.ru"})
-	id := InsertSudirUser(s.db, entity.SudirUser{SudirUserId: secondSudirId, Email: "b_exists@b.ru"})
+	admin := InsertOauthUser(s.db, entity.OauthUser{OauthUserId: firstOauthId, Email: "a_exists@a.ru"})
+	id := InsertOauthUser(s.db, entity.OauthUser{OauthUserId: secondOauthId, Email: "b_exists@b.ru"})
 	req := domain.UpdateUserRequest{
 		Id:        id,
 		FirstName: "name",

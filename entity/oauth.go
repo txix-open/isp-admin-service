@@ -12,18 +12,18 @@ type ClientSetting struct {
 }
 
 // nolint:tagliatelle,godoclint
-type SudirAuthError struct {
+type OauthAuthError struct {
 	ErrorName        string `json:"error"`
 	ErrorDescription string `json:"error_description"`
 }
 
-func (s *SudirAuthError) Error() string {
+func (s *OauthAuthError) Error() string {
 	return fmt.Sprintf("error: %s; description: %s", s.ErrorName, s.ErrorDescription)
 }
 
 // nolint:tagliatelle,errname,godoclint
-type SudirUserResponse struct {
-	*SudirAuthError
+type OauthUserResponse struct {
+	*OauthAuthError
 
 	Email      string   `json:"email"`
 	Groups     []string `json:"groups"`
@@ -34,8 +34,8 @@ type SudirUserResponse struct {
 }
 
 // nolint:tagliatelle,errname,godoclint
-type SudirTokenResponse struct {
-	*SudirAuthError
+type OauthTokenResponse struct {
+	*OauthAuthError
 
 	IdToken      string `json:"id_token"`
 	AccessToken  string `json:"access_token"`

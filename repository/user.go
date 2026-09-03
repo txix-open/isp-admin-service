@@ -25,7 +25,7 @@ const (
 	passwordUsersColumn     = "password"
 	createdAtUsersColumn    = "created_at"
 	updatedAtUsersColumn    = "updated_at"
-	sudirUserIdUsersColumn  = "sudir_user_id"
+	oauthUserIdUsersColumn  = "oauth_user_id"
 	blockedUsersColumn      = "blocked"
 	descriptionUsersColumn  = "description"
 	lastActiveAtUsersColumn = "last_active_at"
@@ -45,7 +45,7 @@ func (u User) GetUserByEmail(ctx context.Context, email string) (*entity.User, e
 
 	q, args, err := query.New().
 		Select(idUsersColumn, firstNameUsersColumn, lastNameUsersColumn, emailUsersColumn, passwordUsersColumn, createdAtUsersColumn,
-			updatedAtUsersColumn, sudirUserIdUsersColumn, blockedUsersColumn, descriptionUsersColumn, lastActiveAtUsersColumn,
+			updatedAtUsersColumn, oauthUserIdUsersColumn, blockedUsersColumn, descriptionUsersColumn, lastActiveAtUsersColumn,
 			fullNameUsersColumn).
 		From("users").
 		Where(squirrel.Eq{"email": email}).
@@ -72,7 +72,7 @@ func (u User) GetUserById(ctx context.Context, identity int64) (*entity.User, er
 
 	q, args, err := query.New().
 		Select(idUsersColumn, firstNameUsersColumn, lastNameUsersColumn, emailUsersColumn, passwordUsersColumn, createdAtUsersColumn,
-			updatedAtUsersColumn, sudirUserIdUsersColumn, blockedUsersColumn, descriptionUsersColumn, lastActiveAtUsersColumn,
+			updatedAtUsersColumn, oauthUserIdUsersColumn, blockedUsersColumn, descriptionUsersColumn, lastActiveAtUsersColumn,
 			fullNameUsersColumn).
 		From("users").
 		Where(squirrel.Eq{"id": identity}).
@@ -94,17 +94,17 @@ func (u User) GetUserById(ctx context.Context, identity int64) (*entity.User, er
 	}
 }
 
-func (u User) GetUserByEmailAndSudirId(ctx context.Context, email string, sudirUserId string) (*entity.User, error) {
-	ctx = sql_metrics.OperationLabelToContext(ctx, "User.GetUserByEmail")
+func (u User) GetUserByEmailAndOauthId(ctx context.Context, email string, oauthUserId string) (*entity.User, error) {
+	ctx = sql_metrics.OperationLabelToContext(ctx, "User.GetUserByEmailAndOauthId")
 
-	equalClause := squirrel.Eq{"email": email, "sudir_user_id": nil}
-	if sudirUserId != "" {
-		equalClause["sudir_user_id"] = sudirUserId
+	equalClause := squirrel.Eq{"email": email, "oauth_user_id": nil}
+	if oauthUserId != "" {
+		equalClause["oauth_user_id"] = oauthUserId
 	}
 
 	q, args, err := query.New().
 		Select(idUsersColumn, firstNameUsersColumn, lastNameUsersColumn, emailUsersColumn, passwordUsersColumn, createdAtUsersColumn,
-			updatedAtUsersColumn, sudirUserIdUsersColumn, blockedUsersColumn, descriptionUsersColumn, lastActiveAtUsersColumn,
+			updatedAtUsersColumn, oauthUserIdUsersColumn, blockedUsersColumn, descriptionUsersColumn, lastActiveAtUsersColumn,
 			fullNameUsersColumn).
 		From("users").
 		Where(equalClause).
@@ -126,13 +126,13 @@ func (u User) GetUserByEmailAndSudirId(ctx context.Context, email string, sudirU
 	}
 }
 
-func (u User) UpsertBySudirUserId(ctx context.Context, user entity.User) (*entity.User, error) {
-	ctx = sql_metrics.OperationLabelToContext(ctx, "User.UpsertBySudirUserId")
+func (u User) UpsertByOauthUserId(ctx context.Context, user entity.User) (*entity.User, error) {
+	ctx = sql_metrics.OperationLabelToContext(ctx, "User.UpsertByOauthUserId")
 
 	selectQ := `
-	insert into users as u (first_name, last_name, full_name, email, created_at, updated_at, sudir_user_id) 
+	insert into users as u (first_name, last_name, full_name, email, created_at, updated_at, oauth_user_id) 
 	values ($1, $2, $3, $4, $5, $6, $7)
-    on conflict (sudir_user_id) do update 
+    on conflict (oauth_user_id) do update 
     set first_name = excluded.first_name,
         last_name = excluded.last_name,
         full_name = excluded.full_name,
@@ -145,7 +145,7 @@ func (u User) UpsertBySudirUserId(ctx context.Context, user entity.User) (*entit
 	err := u.db.SelectRow(ctx,
 		&result,
 		selectQ,
-		user.FirstName, user.LastName, user.FullName, user.Email, user.CreatedAt, user.UpdatedAt, user.SudirUserId,
+		user.FirstName, user.LastName, user.FullName, user.Email, user.CreatedAt, user.UpdatedAt, user.OauthUserId,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, domain.ErrUserIsBlocked
@@ -162,7 +162,7 @@ func (u User) GetUsers(ctx context.Context, req domain.UsersPageRequest) ([]enti
 
 	q := query.New().
 		Select(idUsersColumn, firstNameUsersColumn, lastNameUsersColumn, emailUsersColumn, passwordUsersColumn, createdAtUsersColumn,
-			updatedAtUsersColumn, sudirUserIdUsersColumn, blockedUsersColumn, descriptionUsersColumn, lastActiveAtUsersColumn,
+			updatedAtUsersColumn, oauthUserIdUsersColumn, blockedUsersColumn, descriptionUsersColumn, lastActiveAtUsersColumn,
 			fullNameUsersColumn, "(SELECT max(created_at) FROM tokens WHERE tokens.user_id = users.id) as last_session_created_at").
 		From("users").
 		Offset(req.Offset).
@@ -193,7 +193,7 @@ func (u User) GetAllUsers(ctx context.Context) ([]entity.User, error) {
 
 	query, args, err := query.New().
 		Select(idUsersColumn, firstNameUsersColumn, lastNameUsersColumn, emailUsersColumn, passwordUsersColumn, createdAtUsersColumn,
-			updatedAtUsersColumn, sudirUserIdUsersColumn, blockedUsersColumn, descriptionUsersColumn, lastActiveAtUsersColumn,
+			updatedAtUsersColumn, oauthUserIdUsersColumn, blockedUsersColumn, descriptionUsersColumn, lastActiveAtUsersColumn,
 			fullNameUsersColumn, "(SELECT max(created_at) FROM tokens WHERE tokens.user_id = users.id) as last_session_created_at").
 		From("users").ToSql()
 	if err != nil {
@@ -214,7 +214,7 @@ func (u User) GetUsersByEmail(ctx context.Context, email string) ([]entity.User,
 
 	q, args, err := query.New().
 		Select(idUsersColumn, firstNameUsersColumn, lastNameUsersColumn, emailUsersColumn, passwordUsersColumn, createdAtUsersColumn,
-			updatedAtUsersColumn, sudirUserIdUsersColumn, blockedUsersColumn, descriptionUsersColumn, lastActiveAtUsersColumn,
+			updatedAtUsersColumn, oauthUserIdUsersColumn, blockedUsersColumn, descriptionUsersColumn, lastActiveAtUsersColumn,
 			fullNameUsersColumn).
 		From("users").
 		Where(squirrel.Eq{"email": email}).
@@ -274,7 +274,7 @@ func (u User) UpdateUser(ctx context.Context, id int64, user entity.UpdateUser) 
 			descriptionUsersColumn: user.Description,
 		}).
 		Where(squirrel.Eq{"id": id}).
-		Suffix("RETURNING id, first_name, last_name, full_name, email, sudir_user_id, description, created_at, updated_at").
+		Suffix("RETURNING id, first_name, last_name, full_name, email, oauth_user_id, description, created_at, updated_at").
 		ToSql()
 	if err != nil {
 		return nil, errors.WithMessage(err, "build query")

@@ -17,20 +17,20 @@ const (
 	getUserEndpoint  = "/oauth/me"
 )
 
-type Sudir struct {
+type Oauth struct {
 	cli *httpcli.Client
 }
 
-func NewSudir(cli *httpcli.Client) Sudir {
-	return Sudir{
+func NewOauth(cli *httpcli.Client) Oauth {
+	return Oauth{
 		cli: cli,
 	}
 }
 
-func (s Sudir) GetToken(ctx context.Context, clientSetting entity.ClientSetting) (*entity.SudirTokenResponse, error) {
+func (s Oauth) GetToken(ctx context.Context, clientSetting entity.ClientSetting) (*entity.OauthTokenResponse, error) {
 	ctx = http_metrics.ClientEndpointToContext(ctx, getTokenEndpoint)
 
-	response := entity.SudirTokenResponse{}
+	response := entity.OauthTokenResponse{}
 	err := s.cli.Post(getTokenEndpoint).
 		BasicAuth(httpcli.BasicAuth{
 			Username: clientSetting.ClientId,
@@ -52,10 +52,10 @@ func (s Sudir) GetToken(ctx context.Context, clientSetting entity.ClientSetting)
 	return &response, nil
 }
 
-func (s Sudir) GetUser(ctx context.Context, accessToken string) (*entity.SudirUserResponse, error) {
+func (s Oauth) GetUser(ctx context.Context, accessToken string) (*entity.OauthUserResponse, error) {
 	ctx = http_metrics.ClientEndpointToContext(ctx, getUserEndpoint)
 
-	response := entity.SudirUserResponse{}
+	response := entity.OauthUserResponse{}
 	err := s.cli.Get(getUserEndpoint).
 		Header("Authorization", fmt.Sprintf("Bearer %s", accessToken)).
 		JsonResponseBody(&response).

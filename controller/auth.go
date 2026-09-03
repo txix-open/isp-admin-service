@@ -16,7 +16,7 @@ import (
 
 type authService interface {
 	Login(ctx context.Context, request domain.LoginRequest) (*domain.LoginResponse, error)
-	LoginWithSudir(ctx context.Context, request domain.LoginSudirRequest) (*domain.LoginResponse, error)
+	LoginWithOauth(ctx context.Context, request domain.LoginOauthRequest) (*domain.LoginResponse, error)
 	Logout(ctx context.Context, adminId int64, request *domain.LogoutRequest) error
 }
 
@@ -99,7 +99,7 @@ func (a Auth) Login(ctx context.Context, authRequest domain.LoginRequest) (*doma
 	auth, err := a.authService.Login(ctx, authRequest)
 
 	switch {
-	case errors.Is(err, domain.ErrSudirAuthorization):
+	case errors.Is(err, domain.ErrOauthAuthorization):
 		return nil, status.Error(codes.InvalidArgument, "plain auth is not available")
 	case errors.Is(err, domain.ErrUnauthenticated):
 		a.logger.Error(ctx, err.Error())
@@ -113,28 +113,28 @@ func (a Auth) Login(ctx context.Context, authRequest domain.LoginRequest) (*doma
 	}
 }
 
-// LoginWithSudir
+// LoginWithOauth
 // @Tags auth
-// @Summary Авторизация по авторизационному коду от СУДИР
+// @Summary Авторизация по авторизационному коду от OAuth
 // @Description Авторизация с получением токена администратора
 // @Accept json
 // @Produce json
-// @Param body body domain.LoginSudirRequest true "Тело запроса"
+// @Param body body domain.LoginOauthRequest true "Тело запроса"
 // @Success 200 {object} domain.LoginResponse
 // @Failure 401 {object} domain.GrpcError "Некорректный код для авторизации или неизвестное название клиента"
-// @Failure 412 {object} domain.GrpcError "Авторизация СУДИР не настроена на сервере"
+// @Failure 412 {object} domain.GrpcError "Авторизация OAuth не настроена на сервере"
 // @Failure 500 {object} domain.GrpcError
-// @Router /auth/login_with_sudir [POST]
-func (a Auth) LoginWithSudir(ctx context.Context, request domain.LoginSudirRequest) (*domain.LoginResponse, error) {
-	auth, err := a.authService.LoginWithSudir(ctx, request)
+// @Router /auth/login_with_oauth [POST]
+func (a Auth) LoginWithOauth(ctx context.Context, request domain.LoginOauthRequest) (*domain.LoginResponse, error) {
+	auth, err := a.authService.LoginWithOauth(ctx, request)
 
 	switch {
-	case errors.Is(err, domain.ErrSudirAuthIsMissed):
-		return nil, status.Error(codes.FailedPrecondition, "sudir auth is not configured")
+	case errors.Is(err, domain.ErrOauthIsMissed):
+		return nil, status.Error(codes.FailedPrecondition, "oauth is not configured")
 	case errors.Is(err, domain.ErrUnauthenticated):
 		return nil, status.Error(codes.Unauthenticated, "invalid code")
 	case err != nil:
-		return nil, errors.WithMessage(err, "login with sudir")
+		return nil, errors.WithMessage(err, "login with oauth")
 	default:
 		return auth, nil
 	}

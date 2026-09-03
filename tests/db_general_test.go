@@ -21,15 +21,15 @@ func InsertUser(db *dbt.TestDb, user entity.User) int64 {
 	return id
 }
 
-func InsertSudirUser(db *dbt.TestDb, user entity.SudirUser) int64 {
+func InsertOauthUser(db *dbt.TestDb, user entity.OauthUser) int64 {
 	q, args, err := query.New().
 		Insert("users").
-		Columns("sudir_user_id", "first_name", "last_name", "full_name", "email").
-		Values(user.SudirUserId, user.FirstName, user.LastName, user.FullName, user.Email).
+		Columns("oauth_user_id", "first_name", "last_name", "full_name", "email").
+		Values(user.OauthUserId, user.FirstName, user.LastName, user.FullName, user.Email).
 		Suffix("RETURNING id").
 		ToSql()
 	if err != nil {
-		panic(errors.WithMessagef(err, "insert sudir user"))
+		panic(errors.WithMessagef(err, "insert oauth user"))
 	}
 	var id int64
 	db.Must().SelectRow(&id, q, args...)

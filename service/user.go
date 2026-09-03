@@ -31,7 +31,7 @@ type UserRepo interface {
 	GetUserById(ctx context.Context, identity int64) (*entity.User, error)
 	GetUsers(ctx context.Context, req domain.UsersPageRequest) ([]entity.User, error)
 	GetAllUsers(ctx context.Context) ([]entity.User, error)
-	GetUserByEmailAndSudirId(ctx context.Context, email string, sudirUserId string) (*entity.User, error)
+	GetUserByEmailAndOauthId(ctx context.Context, email string, oauthUserId string) (*entity.User, error)
 	GetUsersByEmail(ctx context.Context, email string) ([]entity.User, error)
 	UpdateUser(ctx context.Context, id int64, user entity.UpdateUser) (*entity.User, error)
 	DeleteUser(ctx context.Context, ids []int64) (int, error)
@@ -207,7 +207,7 @@ func (u User) CreateUser(ctx context.Context, req domain.CreateUserRequest, admi
 	var usr entity.User
 
 	err := u.txRunner.UserTransaction(ctx, func(ctx context.Context, tx UserTransaction) error {
-		user, err := tx.GetUserByEmailAndSudirId(ctx, req.Email, "")
+		user, err := tx.GetUserByEmailAndOauthId(ctx, req.Email, "")
 		switch {
 		case errors.Is(err, domain.ErrNotFound):
 			break
@@ -223,7 +223,7 @@ func (u User) CreateUser(ctx context.Context, req domain.CreateUserRequest, admi
 		}
 
 		usr = entity.User{
-			SudirUserId: nil,
+			OauthUserId: nil,
 			Id:          0,
 			FirstName:   req.FirstName,
 			LastName:    req.LastName,
@@ -301,12 +301,12 @@ func (u User) UpdateUser(ctx context.Context, req domain.UpdateUserRequest, admi
 
 		for _, usr := range users {
 			// check in internal user space
-			if (user.SudirUserId == nil && usr.SudirUserId == nil) && (usr.Id != req.Id) {
+			if (user.OauthUserId == nil && usr.OauthUserId == nil) && (usr.Id != req.Id) {
 				return domain.ErrAlreadyExists
 			}
 
-			// check in sudir user space
-			if usr.SudirUserId != nil && user.SudirUserId != nil && (*user.SudirUserId != *usr.SudirUserId) {
+			// check in oauth user space
+			if usr.OauthUserId != nil && user.OauthUserId != nil && (*user.OauthUserId != *usr.OauthUserId) {
 				return domain.ErrAlreadyExists
 			}
 		}

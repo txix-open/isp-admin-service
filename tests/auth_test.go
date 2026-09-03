@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"strconv"
 	"sync/atomic"
 	"testing"
@@ -43,27 +42,26 @@ type AuthTestSuite struct {
 	test            *test.Test
 	db              *dbt.TestDb
 	grpcCli         *client.Client
-	sudirCli        *httpcli.Client
-	sudirClientName string
+	oauthCli        *httpcli.Client
+	oauthClientName string
 }
 
 func (s *AuthTestSuite) SetupTest() {
 	testInstance, _ := test.New(s.T())
 	s.test = testInstance
 	s.db = dbt.New(testInstance, dbx.WithMigrationRunner("../migrations", testInstance.Logger()))
-	s.sudirCli = httpcli.New()
-	s.sudirClientName = fake.It[string]()
+	s.oauthCli = httpcli.New()
+	s.oauthClientName = fake.It[string]()
 
-	mocksrv, host := s.initMockSudir()
-	sudirHost, _ := url.JoinPath(host, "/blitz/")
-	s.sudirCli.GlobalRequestConfig().BaseUrl = sudirHost
+	mocksrv, host := s.initMockOauth()
+	s.oauthCli.GlobalRequestConfig().BaseUrl = host
 
 	remote := conf.Remote{
-		SudirAuth: &conf.SudirAuth{
-			Host: sudirHost,
-			Clients: []conf.SudirClientConfig{
+		Oauth: &conf.Oauth{
+			Host: host,
+			Clients: []conf.OauthClientConfig{
 				{
-					ClientName:   s.sudirClientName,
+					ClientName:   s.oauthClientName,
 					ClientId:     "admin",
 					ClientSecret: "admin",
 					RedirectURI:  "http://localhost",
@@ -77,7 +75,7 @@ func (s *AuthTestSuite) SetupTest() {
 		},
 	}
 
-	cfg, err := assembly.NewLocator(testInstance.Logger(), s.sudirCli, s.db).
+	cfg, err := assembly.NewLocator(testInstance.Logger(), s.oauthCli, s.db).
 		Config(s.T().Context(), remote, time.Minute)
 	s.Require().NoError(err)
 
@@ -174,20 +172,20 @@ func (s *AuthTestSuite) TestLoginWrongPassword() {
 	time.Sleep(1 * time.Second) // wait for go SaveAuditAsync()
 }
 
-func (s *AuthTestSuite) TestSudirLoginHappyPath() {
+func (s *AuthTestSuite) TestOauthLoginHappyPath() {
 	response := domain.LoginResponse{}
 
-	err := s.grpcCli.Invoke("admin/auth/login_with_sudir").
-		JsonRequestBody(domain.LoginSudirRequest{
+	err := s.grpcCli.Invoke("admin/auth/login_with_oauth").
+		JsonRequestBody(domain.LoginOauthRequest{
 			AuthCode:   "code",
-			ClientName: s.sudirClientName,
+			ClientName: s.oauthClientName,
 		}).
 		JsonResponseBody(&response).
 		Do(s.T().Context())
 	s.Require().NoError(err)
 	user := entity.User{}
-	s.db.Must().SelectRow(&user, "select id, email, full_name from users where sudir_user_id = $1", "sudirUser1")
-	s.Require().Equal("sudir@email.ru", user.Email)
+	s.db.Must().SelectRow(&user, "select id, email, full_name from users where oauth_user_id = $1", "oauthUser1")
+	s.Require().Equal("oauth@email.ru", user.Email)
 	s.Require().Equal("surname name patronymic", user.FullName)
 
 	tokenInfo := SelectTokenEntityByToken(s.db, response.Token)
@@ -196,13 +194,13 @@ func (s *AuthTestSuite) TestSudirLoginHappyPath() {
 	time.Sleep(1 * time.Second) // wait for go SaveAuditAsync()
 }
 
-func (s *AuthTestSuite) TestSudirLogin_UnknownClient() {
+func (s *AuthTestSuite) TestOauthLogin_UnknownClient() {
 	response := domain.LoginResponse{}
 
-	err := s.grpcCli.Invoke("admin/auth/login_with_sudir").
-		JsonRequestBody(domain.LoginSudirRequest{
+	err := s.grpcCli.Invoke("admin/auth/login_with_oauth").
+		JsonRequestBody(domain.LoginOauthRequest{
 			AuthCode:   "code",
-			ClientName: s.sudirClientName + fake.It[string](),
+			ClientName: s.oauthClientName + fake.It[string](),
 		}).
 		JsonResponseBody(&response).
 		Do(s.T().Context())
@@ -325,11 +323,11 @@ func (s *AuthTestSuite) TestBruteForceLogin() {
 	time.Sleep(2 * time.Second) // wait for go SaveAuditAsync()
 }
 
-func (s *AuthTestSuite) initMockSudir() (*httptest.Server, string) {
+func (s *AuthTestSuite) initMockOauth() (*httptest.Server, string) {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/blitz/oauth/te", func(writer http.ResponseWriter, request *http.Request) {
-		res := entity.SudirTokenResponse{
-			SudirAuthError: nil,
+	mux.HandleFunc("/oauth/te", func(writer http.ResponseWriter, request *http.Request) {
+		res := entity.OauthTokenResponse{
+			OauthAuthError: nil,
 			IdToken:        "1",
 			AccessToken:    "token",
 		}
@@ -338,12 +336,12 @@ func (s *AuthTestSuite) initMockSudir() (*httptest.Server, string) {
 		_, err = writer.Write(data)
 		s.NoError(err)
 	})
-	mux.HandleFunc("/blitz/oauth/me", func(writer http.ResponseWriter, request *http.Request) {
-		res := entity.SudirUserResponse{
-			SudirAuthError: nil,
-			Email:          "sudir@email.ru",
+	mux.HandleFunc("/oauth/me", func(writer http.ResponseWriter, request *http.Request) {
+		res := entity.OauthUserResponse{
+			OauthAuthError: nil,
+			Email:          "oauth@email.ru",
 			Groups:         []string{"DIT-KKD-Admins"},
-			Sub:            "sudirUser1",
+			Sub:            "oauthUser1",
 			GivenName:      "name",
 			FamilyName:     "surname",
 			Name:           "surname name patronymic",
