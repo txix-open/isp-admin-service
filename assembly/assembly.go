@@ -4,45 +4,48 @@ import (
 	"context"
 	"time"
 
-	"msp-admin-service/conf"
-	"msp-admin-service/service/delete_old_audit_worker"
-	"msp-admin-service/service/inactive_worker"
-	"msp-admin-service/service/session_worker"
+	"isp-admin-service/conf"
+	"isp-admin-service/service/delete_old_audit_worker"
+	"isp-admin-service/service/inactive_worker"
+	"isp-admin-service/service/session_worker"
 
-	"github.com/pkg/errors"
 	"github.com/txix-open/isp-kit/app"
 	"github.com/txix-open/isp-kit/bgjobx"
 	"github.com/txix-open/isp-kit/bootstrap"
 	"github.com/txix-open/isp-kit/cluster"
 	"github.com/txix-open/isp-kit/dbrx"
 	"github.com/txix-open/isp-kit/dbx"
+	"github.com/txix-open/isp-kit/errors"
 	"github.com/txix-open/isp-kit/grpc"
 	"github.com/txix-open/isp-kit/http/httpcli"
 	"github.com/txix-open/isp-kit/http/httpclix"
 	"github.com/txix-open/isp-kit/log"
+	"github.com/txix-open/isp-kit/observability/sentry"
 )
 
 type Assembly struct {
 	boot     *bootstrap.Bootstrap
 	db       *dbrx.Client
 	server   *grpc.Server
-	httpCli  *httpcli.Client
+	oauthCli *httpcli.Client
 	logger   *log.Adapter
 	bgjobCli *bgjobx.Client
 }
 
 func New(boot *bootstrap.Bootstrap) (*Assembly, error) {
 	logger := boot.App.Logger()
-	server := grpc.NewServer()
-	httpCli := httpclix.Default(httpcli.WithMiddlewares(httpclix.Log(logger)))
-	db := dbrx.New(logger, dbx.WithMigrationRunner(boot.MigrationsDir, logger))
-	bgjobCli := bgjobx.NewClient(db, logger)
+	wrappedLogger := sentry.WrapErrorLogger(logger, boot.SentryHub)
+
+	db := dbrx.New(logger, dbx.WithMigrationRunner(boot.MigrationsDir, wrappedLogger))
+	boot.HealthcheckRegistry.Register("db", db)
+
+	bgjobCli := bgjobx.NewClient(db, wrappedLogger)
 	return &Assembly{
 		boot:     boot,
 		db:       db,
-		server:   server,
+		server:   grpc.NewServer(),
 		logger:   logger,
-		httpCli:  httpCli,
+		oauthCli: httpclix.Default(httpcli.WithMiddlewares(httpclix.Log(wrappedLogger))),
 		bgjobCli: bgjobCli,
 	}, nil
 }
@@ -64,8 +67,17 @@ func (a *Assembly) ReceiveConfig(ctx context.Context, remoteConfig []byte) error
 		a.logger.Fatal(ctx, errors.WithMessage(err, "upgrade db client"))
 	}
 
-	locator := NewLocator(a.logger, a.httpCli, a.db)
-	config := locator.Config(ctx, newCfg, time.Minute)
+	oauthBaseUrl := ""
+	if newCfg.Oauth != nil {
+		oauthBaseUrl = newCfg.Oauth.Host
+	}
+	a.oauthCli.GlobalRequestConfig().BaseUrl = oauthBaseUrl
+
+	locator := NewLocator(a.logger, a.oauthCli, a.db)
+	config, err := locator.Config(ctx, newCfg, time.Minute)
+	if err != nil {
+		a.logger.Fatal(ctx, errors.WithMessage(err, "locator config"))
+	}
 
 	a.server.Upgrade(config.Handler)
 

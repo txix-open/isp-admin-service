@@ -1,3 +1,16 @@
+### v7.1.0
+* переименование авторизации через SUDIR в OAuth:
+  * Эндпоинты: `admin/auth/login_with_oauth`, `admin/ui_settings/oauth`
+  * Колонка `users.sudir_user_id` → `users.oauth_user_id` 
+  * Переименованы ошибки: `ErrOauthAuthorization`, `ErrOauthIsMissed`
+  * Метод `LoginWithSudir` → `LoginWithOauth`, поле `OauthUser.SudirUserId` → `OauthUser.OauthUserId`
+  * Обновлены сообщения ошибок, логи, аудит и swagger-документация
+  * в конфиге ключ OAuth-раздела `sudirAuth` → `oauth`
+### v7.0.0
+* Изменена логика авторизации через СУДИР:
+  * Изменена схема конфигурации для авторизации через СУДИР
+  * Изменён контракт взаимодействия по `admin/auth/login_with_sudir`
+  * Добавлен endpoint для получения ссылок для login и logout через sudir - `admin/ui_settings/sudir`
 ### v6.8.2
 * обновлены зависимости
 ### v6.8.1

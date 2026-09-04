@@ -3,11 +3,12 @@ package controller
 import (
 	"context"
 
-	"github.com/pkg/errors"
+	"isp-admin-service/domain"
+
+	"github.com/txix-open/isp-kit/errors"
 	"github.com/txix-open/isp-kit/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"msp-admin-service/domain"
 )
 
 type roleService interface {

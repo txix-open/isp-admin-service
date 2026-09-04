@@ -3,8 +3,9 @@ package conf_test
 import (
 	"testing"
 
+	"isp-admin-service/conf"
+
 	"github.com/txix-open/isp-kit/test/rct"
-	"msp-admin-service/conf"
 )
 
 func TestDefaultRemoteConfig(t *testing.T) {

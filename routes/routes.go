@@ -1,9 +1,11 @@
 package routes
 
 import (
-	"msp-admin-service/controller"
+	"isp-admin-service/controller"
+	"isp-admin-service/docs"
 
 	"github.com/txix-open/isp-kit/cluster"
+	"github.com/txix-open/isp-kit/common_endpoints"
 	"github.com/txix-open/isp-kit/grpc"
 	"github.com/txix-open/isp-kit/grpc/endpoint"
 	"github.com/txix-open/isp-kit/grpc/isp"
@@ -18,15 +20,22 @@ type Controllers struct {
 	Audit         controller.Audit
 	Role          controller.Role
 	Permissions   controller.Permissions
+	UiSettings    controller.UiSettings
 }
 
 func EndpointDescriptors() []cluster.EndpointDescriptor {
-	return endpointDescriptors(Controllers{})
+	return concatEndpoints(
+		endpointDescriptors(Controllers{}),
+		commonEndpoints(),
+	)
 }
 
 func Handler(wrapper endpoint.Wrapper, c Controllers) isp.BackendServiceServer { // nolint:ireturn
 	muxer := grpc.NewMux()
 	for _, descriptor := range endpointDescriptors(c) {
+		muxer.Handle(descriptor.Path, wrapper.Endpoint(descriptor.Handler))
+	}
+	for _, descriptor := range commonEndpoints() {
 		muxer.Handle(descriptor.Path, wrapper.Endpoint(descriptor.Handler))
 	}
 	return muxer
@@ -41,9 +50,9 @@ func endpointDescriptors(c Controllers) []cluster.EndpointDescriptor {
 			Handler: c.Auth.Login,
 		},
 		{
-			Path:    "admin/auth/login_with_sudir",
+			Path:    "admin/auth/login_with_oauth",
 			Inner:   false,
-			Handler: c.Auth.LoginWithSudir,
+			Handler: c.Auth.LoginWithOauth,
 		},
 		{
 			Path:    "admin/auth/logout",
@@ -179,5 +188,25 @@ func endpointDescriptors(c Controllers) []cluster.EndpointDescriptor {
 			Inner:   true,
 			Handler: c.Secure.Authorize,
 		},
+		{
+			Path:    "admin/ui_settings/oauth",
+			Inner:   false,
+			Handler: c.UiSettings.OauthSettings,
+		},
 	}
+}
+
+func commonEndpoints() []cluster.EndpointDescriptor {
+	return common_endpoints.CommonEndpoints(
+		"isp-admin-service",
+		common_endpoints.WithSwaggerEndpoint(docs.SwaggerJson),
+	)
+}
+
+func concatEndpoints(endpoints ...[]cluster.EndpointDescriptor) []cluster.EndpointDescriptor {
+	var result []cluster.EndpointDescriptor
+	for _, desc := range endpoints {
+		result = append(result, desc...)
+	}
+	return result
 }
