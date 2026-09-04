@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"msp-admin-service/entity"
+	"isp-admin-service/entity"
 
-	"github.com/pkg/errors"
+	"github.com/txix-open/isp-kit/errors"
 	"github.com/txix-open/isp-kit/http/httpcli"
 	"github.com/txix-open/isp-kit/metrics/http_metrics"
 )

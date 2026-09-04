@@ -2,9 +2,9 @@ package controller
 
 import (
 	"context"
-	"msp-admin-service/domain"
+	"isp-admin-service/domain"
 
-	"github.com/pkg/errors"
+	"github.com/txix-open/isp-kit/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

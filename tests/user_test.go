@@ -9,12 +9,12 @@ import (
 	"github.com/txix-open/isp-kit/grpc/apierrors"
 	"golang.org/x/crypto/bcrypt"
 
-	"msp-admin-service/assembly"
-	"msp-admin-service/conf"
-	"msp-admin-service/domain"
-	"msp-admin-service/entity"
-	"msp-admin-service/repository"
-	"msp-admin-service/service"
+	"isp-admin-service/assembly"
+	"isp-admin-service/conf"
+	"isp-admin-service/domain"
+	"isp-admin-service/entity"
+	"isp-admin-service/repository"
+	"isp-admin-service/service"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/suite"

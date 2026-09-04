@@ -4,9 +4,9 @@ import (
 	"context"
 	"strconv"
 
-	"msp-admin-service/domain"
+	"isp-admin-service/domain"
 
-	"github.com/pkg/errors"
+	"github.com/txix-open/isp-kit/errors"
 	"github.com/txix-open/isp-kit/grpc"
 	"github.com/txix-open/isp-kit/log"
 	"google.golang.org/grpc/codes"

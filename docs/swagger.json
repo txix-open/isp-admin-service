@@ -2,7 +2,7 @@
     "swagger": "2.0",
     "info": {
         "description": "сервис управления администраторами",
-        "title": "msp-admin-service",
+        "title": "isp-admin-service",
         "contact": {},
         "license": {
             "name": "GNU GPL v3.0"

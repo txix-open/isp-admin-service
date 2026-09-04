@@ -9,13 +9,13 @@ import (
 	"testing"
 	"time"
 
-	"msp-admin-service/assembly"
-	"msp-admin-service/conf"
-	"msp-admin-service/domain"
-	"msp-admin-service/entity"
-	"msp-admin-service/repository"
+	"isp-admin-service/assembly"
+	"isp-admin-service/conf"
+	"isp-admin-service/domain"
+	"isp-admin-service/entity"
+	"isp-admin-service/repository"
 
-	"github.com/pkg/errors"
+	"github.com/txix-open/isp-kit/errors"
 	"github.com/txix-open/isp-kit/test/fake"
 	"golang.org/x/sync/errgroup"
 

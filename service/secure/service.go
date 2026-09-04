@@ -5,9 +5,10 @@ import (
 	"slices"
 	"time"
 
-	"github.com/pkg/errors"
-	"msp-admin-service/domain"
-	"msp-admin-service/entity"
+	"isp-admin-service/domain"
+	"isp-admin-service/entity"
+
+	"github.com/txix-open/isp-kit/errors"
 )
 
 type TokenRep interface {

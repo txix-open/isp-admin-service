@@ -4,14 +4,15 @@ import (
 	"testing"
 	"time"
 
+	"isp-admin-service/assembly"
+	"isp-admin-service/conf"
+
 	"github.com/stretchr/testify/suite"
 	"github.com/txix-open/isp-kit/dbx"
 	"github.com/txix-open/isp-kit/grpc/client"
 	"github.com/txix-open/isp-kit/test"
 	"github.com/txix-open/isp-kit/test/dbt"
 	"github.com/txix-open/isp-kit/test/grpct"
-	"msp-admin-service/assembly"
-	"msp-admin-service/conf"
 )
 
 func TestCustomizationTestSuite(t *testing.T) {

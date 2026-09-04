@@ -1,9 +1,9 @@
 package tests_test
 
 import (
-	"msp-admin-service/assembly"
-	"msp-admin-service/conf"
-	"msp-admin-service/domain"
+	"isp-admin-service/assembly"
+	"isp-admin-service/conf"
+	"isp-admin-service/domain"
 	"net/url"
 	"testing"
 

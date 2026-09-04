@@ -1,4 +1,4 @@
-module msp-admin-service
+module isp-admin-service
 
 go 1.26.0
 
@@ -6,7 +6,6 @@ require (
 	github.com/Masterminds/squirrel v1.5.4
 	github.com/google/uuid v1.6.0
 	github.com/iancoleman/strcase v0.3.0
-	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.12.1
 	github.com/txix-open/bgjob v1.6.0
 	github.com/txix-open/isp-kit v1.74.1

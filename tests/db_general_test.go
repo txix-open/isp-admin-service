@@ -1,10 +1,10 @@
 package tests_test
 
 import (
-	"msp-admin-service/entity"
+	"isp-admin-service/entity"
 
-	"github.com/pkg/errors"
 	"github.com/txix-open/isp-kit/db/query"
+	"github.com/txix-open/isp-kit/errors"
 	"github.com/txix-open/isp-kit/test/dbt"
 	"golang.org/x/crypto/bcrypt"
 )

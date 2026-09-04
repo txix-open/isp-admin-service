@@ -1,8 +1,8 @@
 package routes
 
 import (
-	"msp-admin-service/controller"
-	"msp-admin-service/docs"
+	"isp-admin-service/controller"
+	"isp-admin-service/docs"
 
 	"github.com/txix-open/isp-kit/cluster"
 	"github.com/txix-open/isp-kit/common_endpoints"
@@ -198,7 +198,7 @@ func endpointDescriptors(c Controllers) []cluster.EndpointDescriptor {
 
 func commonEndpoints() []cluster.EndpointDescriptor {
 	return common_endpoints.CommonEndpoints(
-		"msp-admin-service",
+		"isp-admin-service",
 		common_endpoints.WithSwaggerEndpoint(docs.SwaggerJson),
 	)
 }

@@ -2,8 +2,8 @@ package service
 
 import (
 	"context"
-	"msp-admin-service/conf"
-	"msp-admin-service/domain"
+	"isp-admin-service/conf"
+	"isp-admin-service/domain"
 	"net/url"
 
 	"github.com/txix-open/isp-kit/errors"

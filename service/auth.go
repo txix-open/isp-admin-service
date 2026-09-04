@@ -5,10 +5,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"msp-admin-service/domain"
-	"msp-admin-service/entity"
+	"isp-admin-service/domain"
+	"isp-admin-service/entity"
 
-	"github.com/pkg/errors"
+	"github.com/txix-open/isp-kit/errors"
 	"github.com/txix-open/isp-kit/log"
 	"golang.org/x/crypto/bcrypt"
 )
