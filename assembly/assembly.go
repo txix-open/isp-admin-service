@@ -4,18 +4,18 @@ import (
 	"context"
 	"time"
 
-	"msp-admin-service/conf"
-	"msp-admin-service/service/delete_old_audit_worker"
-	"msp-admin-service/service/inactive_worker"
-	"msp-admin-service/service/session_worker"
+	"isp-admin-service/conf"
+	"isp-admin-service/service/delete_old_audit_worker"
+	"isp-admin-service/service/inactive_worker"
+	"isp-admin-service/service/session_worker"
 
-	"github.com/pkg/errors"
 	"github.com/txix-open/isp-kit/app"
 	"github.com/txix-open/isp-kit/bgjobx"
 	"github.com/txix-open/isp-kit/bootstrap"
 	"github.com/txix-open/isp-kit/cluster"
 	"github.com/txix-open/isp-kit/dbrx"
 	"github.com/txix-open/isp-kit/dbx"
+	"github.com/txix-open/isp-kit/errors"
 	"github.com/txix-open/isp-kit/grpc"
 	"github.com/txix-open/isp-kit/http/httpcli"
 	"github.com/txix-open/isp-kit/http/httpclix"
@@ -27,7 +27,7 @@ type Assembly struct {
 	boot     *bootstrap.Bootstrap
 	db       *dbrx.Client
 	server   *grpc.Server
-	sudirCli *httpcli.Client
+	oauthCli *httpcli.Client
 	logger   *log.Adapter
 	bgjobCli *bgjobx.Client
 }
@@ -45,7 +45,7 @@ func New(boot *bootstrap.Bootstrap) (*Assembly, error) {
 		db:       db,
 		server:   grpc.NewServer(),
 		logger:   logger,
-		sudirCli: httpclix.Default(httpcli.WithMiddlewares(httpclix.Log(wrappedLogger))),
+		oauthCli: httpclix.Default(httpcli.WithMiddlewares(httpclix.Log(wrappedLogger))),
 		bgjobCli: bgjobCli,
 	}, nil
 }
@@ -67,13 +67,13 @@ func (a *Assembly) ReceiveConfig(ctx context.Context, remoteConfig []byte) error
 		a.logger.Fatal(ctx, errors.WithMessage(err, "upgrade db client"))
 	}
 
-	sudirBaseUrl := ""
-	if newCfg.SudirAuth != nil {
-		sudirBaseUrl = newCfg.SudirAuth.Host
+	oauthBaseUrl := ""
+	if newCfg.Oauth != nil {
+		oauthBaseUrl = newCfg.Oauth.Host
 	}
-	a.sudirCli.GlobalRequestConfig().BaseUrl = sudirBaseUrl
+	a.oauthCli.GlobalRequestConfig().BaseUrl = oauthBaseUrl
 
-	locator := NewLocator(a.logger, a.sudirCli, a.db)
+	locator := NewLocator(a.logger, a.oauthCli, a.db)
 	config, err := locator.Config(ctx, newCfg, time.Minute)
 	if err != nil {
 		a.logger.Fatal(ctx, errors.WithMessage(err, "locator config"))

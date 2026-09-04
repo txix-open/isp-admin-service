@@ -3,7 +3,7 @@ package domain
 import (
 	"fmt"
 
-	"github.com/pkg/errors"
+	"github.com/txix-open/isp-kit/errors"
 )
 
 const (
@@ -13,8 +13,8 @@ const (
 var (
 	ErrNotFound             = errors.New("not found")
 	ErrUnauthenticated      = errors.New("authentication failure")
-	ErrSudirAuthorization   = errors.New("User is authorized only with SUDIR")
-	ErrSudirAuthIsMissed    = errors.New("SUDIR authorization is not configured on the server")
+	ErrOauthAuthorization   = errors.New("user is authorized only with oauth")
+	ErrOauthIsMissed        = errors.New("oauth is not configured on the server")
 	ErrInvalid              = errors.New("entity is invalid")
 	ErrAlreadyExists        = errors.New("already exists")
 	ErrTokenExpired         = errors.New("token expired")

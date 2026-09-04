@@ -1,9 +1,9 @@
 package main
 
 import (
-	"msp-admin-service/assembly"
-	"msp-admin-service/conf"
-	"msp-admin-service/routes"
+	"isp-admin-service/assembly"
+	"isp-admin-service/conf"
+	"isp-admin-service/routes"
 
 	"github.com/txix-open/isp-kit/bootstrap"
 	"github.com/txix-open/isp-kit/cluster"
@@ -12,7 +12,7 @@ import (
 
 var version = "1.0.0"
 
-// @title msp-admin-service
+// @title isp-admin-service
 // @version 1.0.0
 // @description сервис управления администраторами
 

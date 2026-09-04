@@ -4,7 +4,7 @@ type ClientNameRequest struct {
 	ClientName string `validate:"required"`
 }
 
-type UiSudirSetting struct {
-	LoginUrl  string // URL для получения authCode для авторизации через СУДИР
+type UiOauthSetting struct {
+	LoginUrl  string // URL для получения authCode для авторизации через OAuth
 	LogoutUrl string // URL для завершения сессии
 }

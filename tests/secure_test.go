@@ -4,6 +4,11 @@ import (
 	"testing"
 	"time"
 
+	"isp-admin-service/assembly"
+	"isp-admin-service/conf"
+	"isp-admin-service/domain"
+	"isp-admin-service/entity"
+
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"github.com/txix-open/isp-kit/dbx"
@@ -12,10 +17,6 @@ import (
 	"github.com/txix-open/isp-kit/test"
 	"github.com/txix-open/isp-kit/test/dbt"
 	"github.com/txix-open/isp-kit/test/grpct"
-	"msp-admin-service/assembly"
-	"msp-admin-service/conf"
-	"msp-admin-service/domain"
-	"msp-admin-service/entity"
 )
 
 func TestSecureSuite(t *testing.T) {

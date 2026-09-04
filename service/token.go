@@ -6,10 +6,10 @@ import (
 	"encoding/hex"
 	"time"
 
-	"msp-admin-service/domain"
-	"msp-admin-service/entity"
+	"isp-admin-service/domain"
+	"isp-admin-service/entity"
 
-	"github.com/pkg/errors"
+	"github.com/txix-open/isp-kit/errors"
 	"golang.org/x/sync/errgroup"
 )
 

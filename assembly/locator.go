@@ -4,16 +4,16 @@ import (
 	"context"
 	"time"
 
-	"msp-admin-service/conf"
-	"msp-admin-service/controller"
-	"msp-admin-service/repository"
-	"msp-admin-service/routes"
-	"msp-admin-service/service"
-	"msp-admin-service/service/delete_old_audit_worker"
-	"msp-admin-service/service/inactive_worker"
-	"msp-admin-service/service/secure"
-	"msp-admin-service/service/session_worker"
-	"msp-admin-service/transaction"
+	"isp-admin-service/conf"
+	"isp-admin-service/controller"
+	"isp-admin-service/repository"
+	"isp-admin-service/routes"
+	"isp-admin-service/service"
+	"isp-admin-service/service/delete_old_audit_worker"
+	"isp-admin-service/service/inactive_worker"
+	"isp-admin-service/service/secure"
+	"isp-admin-service/service/session_worker"
+	"isp-admin-service/transaction"
 
 	"github.com/txix-open/isp-kit/bgjobx"
 	"github.com/txix-open/isp-kit/db"
@@ -31,14 +31,14 @@ type DB interface {
 
 type Locator struct {
 	logger   log.Logger
-	sudirCli *httpcli.Client
+	oauthCli *httpcli.Client
 	db       DB
 }
 
-func NewLocator(logger log.Logger, sudirCli *httpcli.Client, db DB) Locator {
+func NewLocator(logger log.Logger, oauthCli *httpcli.Client, db DB) Locator {
 	return Locator{
 		logger:   logger,
-		sudirCli: sudirCli,
+		oauthCli: oauthCli,
 		db:       db,
 	}
 }
@@ -54,7 +54,7 @@ func (l Locator) Config(
 	cfg conf.Remote,
 	jobPollInterval time.Duration,
 ) (Config, error) {
-	sudirRepo := repository.NewSudir(l.sudirCli)
+	oauthRepo := repository.NewOauth(l.oauthCli)
 	roleRepo := repository.NewRole(l.db)
 	userRepo := repository.NewUser(l.db)
 	tokenRepo := repository.NewToken(l.db)
@@ -65,10 +65,10 @@ func (l Locator) Config(
 	auditService := service.NewAudit(ctx, l.logger, auditRepo, auditEventRepo, cfg.Audit.EventSettings)
 	tokenService := service.NewToken(tokenRepo, cfg.ExpireSec)
 
-	sudirBaseUrl, sudirSettings := l.getSudirSettings(cfg.SudirAuth)
-	sudirService, err := service.NewSudir(sudirSettings, sudirRepo)
+	oauthBaseUrl, oauthSettings := l.getOauthSettings(cfg.Oauth)
+	oauthService, err := service.NewOauth(oauthSettings, oauthRepo)
 	if err != nil {
-		return Config{}, errors.WithMessage(err, "new sudir")
+		return Config{}, errors.WithMessage(err, "new oauth")
 	}
 
 	secureService := secure.NewService(tokenRepo, userRoleRepo)
@@ -87,7 +87,7 @@ func (l Locator) Config(
 		l.logger,
 	)
 	authService := service.NewAuth(
-		userRepo, txManager, tokenService, sudirService, auditService, l.logger,
+		userRepo, txManager, tokenService, oauthService, auditService, l.logger,
 		cfg.AntiBruteforce.DelayLoginRequestInSec,
 		cfg.AntiBruteforce.MaxInFlightLoginRequests,
 	)
@@ -95,7 +95,7 @@ func (l Locator) Config(
 
 	permissionsService := service.NewPermission(cfg.Permissions)
 
-	uiSettingsService := service.NewUiSettings(sudirBaseUrl, sudirSettings)
+	uiSettingsService := service.NewUiSettings(oauthBaseUrl, oauthSettings)
 
 	userController := controller.NewUser(userService)
 	customizationController := controller.NewCustomization(cfg.UiDesign)
@@ -152,10 +152,10 @@ func (l Locator) Config(
 	}, nil
 }
 
-func (l Locator) getSudirSettings(sudirAuth *conf.SudirAuth) (string, []conf.SudirClientConfig) {
-	if sudirAuth == nil {
-		return "", []conf.SudirClientConfig{}
+func (l Locator) getOauthSettings(oauthAuth *conf.Oauth) (string, []conf.OauthClientConfig) {
+	if oauthAuth == nil {
+		return "", []conf.OauthClientConfig{}
 	}
 
-	return sudirAuth.Host, sudirAuth.Clients
+	return oauthAuth.Host, oauthAuth.Clients
 }

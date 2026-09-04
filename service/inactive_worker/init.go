@@ -3,9 +3,9 @@ package inactive_worker
 import (
 	"context"
 
-	"github.com/pkg/errors"
 	"github.com/txix-open/bgjob"
 	"github.com/txix-open/isp-kit/bgjobx"
+	"github.com/txix-open/isp-kit/errors"
 )
 
 const (

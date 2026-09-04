@@ -1,8 +1,8 @@
 package controller
 
 import (
-	"msp-admin-service/conf"
-	"msp-admin-service/domain"
+	"isp-admin-service/conf"
+	"isp-admin-service/domain"
 )
 
 type Customization struct {

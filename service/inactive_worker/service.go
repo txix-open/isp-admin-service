@@ -4,12 +4,12 @@ import (
 	"context"
 	"time"
 
-	"msp-admin-service/conf"
-	"msp-admin-service/entity"
+	"isp-admin-service/conf"
+	"isp-admin-service/entity"
 
-	"github.com/pkg/errors"
 	"github.com/txix-open/bgjob"
 	"github.com/txix-open/isp-kit/bgjobx/handler"
+	"github.com/txix-open/isp-kit/errors"
 	"github.com/txix-open/isp-kit/log"
 )
 

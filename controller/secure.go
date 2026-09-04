@@ -3,9 +3,10 @@ package controller
 import (
 	"context"
 
-	"github.com/pkg/errors"
+	"isp-admin-service/domain"
+
+	"github.com/txix-open/isp-kit/errors"
 	"github.com/txix-open/isp-kit/grpc/apierrors"
-	"msp-admin-service/domain"
 )
 
 type SecureService interface {

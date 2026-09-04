@@ -2,15 +2,15 @@ package controller
 
 import (
 	"context"
-	"msp-admin-service/domain"
+	"isp-admin-service/domain"
 
-	"github.com/pkg/errors"
+	"github.com/txix-open/isp-kit/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 type UiSettingsService interface {
-	SudirSettings(ctx context.Context, req domain.ClientNameRequest) (*domain.UiSudirSetting, error)
+	OauthSettings(ctx context.Context, req domain.ClientNameRequest) (*domain.UiOauthSetting, error)
 }
 
 type UiSettings struct {
@@ -23,20 +23,20 @@ func NewUiSettings(service UiSettingsService) UiSettings {
 	}
 }
 
-// UiSudirSettings
+// UiOauthSettings
 // @Tags ui_settings
-// @Summary Получение настроек для ui для авторизации через СУДИР
-// @Description Получение настроек для ui для авторизации через СУДИР
+// @Summary Получение настроек для ui для авторизации через OAuth
+// @Description Получение настроек для ui для авторизации через OAuth
 // @Accept json
 // @Produce json
 // @Param body body domain.ClientNameRequest true "Тело запроса"
-// @Success 200 {object} domain.UiSudirSetting
+// @Success 200 {object} domain.UiOauthSetting
 // @Failure 400 {object} domain.GrpcError
 // @Failure 401 {object} domain.GrpcError "Неизвестное название клиента"
 // @Failure 500 {object} domain.GrpcError
-// @Router /ui_settings/sudir [POST]
-func (c UiSettings) SudirSettings(ctx context.Context, req domain.ClientNameRequest) (*domain.UiSudirSetting, error) {
-	resp, err := c.service.SudirSettings(ctx, req)
+// @Router /ui_settings/oauth [POST]
+func (c UiSettings) OauthSettings(ctx context.Context, req domain.ClientNameRequest) (*domain.UiOauthSetting, error) {
+	resp, err := c.service.OauthSettings(ctx, req)
 	switch {
 	case errors.Is(err, domain.ErrUnknownClient):
 		return nil, status.Error(codes.Unauthenticated, "invalid client name")

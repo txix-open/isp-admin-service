@@ -3,7 +3,7 @@ package entity
 import "time"
 
 type User struct {
-	SudirUserId          *string
+	OauthUserId          *string
 	Id                   int64
 	FirstName            string
 	LastName             string
@@ -18,9 +18,9 @@ type User struct {
 	LastSessionCreatedAt *time.Time
 }
 
-type SudirUser struct {
+type OauthUser struct {
 	RoleIds     []int
-	SudirUserId string
+	OauthUserId string
 	FirstName   string
 	LastName    string
 	Email       string

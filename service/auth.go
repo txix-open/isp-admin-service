@@ -5,10 +5,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"msp-admin-service/domain"
-	"msp-admin-service/entity"
+	"isp-admin-service/domain"
+	"isp-admin-service/entity"
 
-	"github.com/pkg/errors"
+	"github.com/txix-open/isp-kit/errors"
 	"github.com/txix-open/isp-kit/log"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -30,7 +30,7 @@ type auditService interface {
 
 type userRepository interface {
 	GetUserByEmail(ctx context.Context, email string) (*entity.User, error)
-	UpsertBySudirUserId(ctx context.Context, user entity.User) (*entity.User, error)
+	UpsertByOauthUserId(ctx context.Context, user entity.User) (*entity.User, error)
 	UpdateUser(ctx context.Context, id int64, user entity.UpdateUser) (*entity.User, error)
 	UpdateLastActiveAt(ctx context.Context, userId int64, lastActiveAt time.Time) error
 }
@@ -40,15 +40,15 @@ type tokenService interface {
 	RevokeAllByUserId(ctx context.Context, userId int64) error
 }
 
-type sudirService interface {
-	Authenticate(ctx context.Context, request domain.LoginSudirRequest, repo roleRepo) (*entity.SudirUser, error)
+type oauthService interface {
+	Authenticate(ctx context.Context, request domain.LoginOauthRequest, repo roleRepo) (*entity.OauthUser, error)
 }
 
 type Auth struct {
 	userRepository           userRepository
 	txRunner                 AuthTransactionRunner
 	tokenService             tokenService
-	sudirService             sudirService
+	oauthService             oauthService
 	auditService             auditService
 	logger                   log.Logger
 	maxInFlightLoginRequests int64
@@ -60,7 +60,7 @@ func NewAuth(
 	userRepository userRepository,
 	txRunner AuthTransactionRunner,
 	tokenService tokenService,
-	sudirService sudirService,
+	oauthService oauthService,
 	auditService auditService,
 	logger log.Logger,
 	delayLoginRequestInSec int,
@@ -70,7 +70,7 @@ func NewAuth(
 		userRepository:           userRepository,
 		txRunner:                 txRunner,
 		tokenService:             tokenService,
-		sudirService:             sudirService,
+		oauthService:             oauthService,
 		auditService:             auditService,
 		logger:                   logger,
 		delayLoginRequest:        time.Duration(delayLoginRequestInSec) * time.Second,
@@ -100,8 +100,8 @@ func (a Auth) Login(ctx context.Context, request domain.LoginRequest) (*domain.L
 			return errors.WithMessage(domain.ErrUnauthenticated, "wrong email")
 		case err != nil:
 			return errors.WithMessage(err, "get user by email")
-		case user.SudirUserId != nil:
-			return domain.ErrSudirAuthorization
+		case user.OauthUserId != nil:
+			return domain.ErrOauthAuthorization
 		}
 
 		if user.Blocked {
@@ -141,7 +141,7 @@ func (a Auth) Login(ctx context.Context, request domain.LoginRequest) (*domain.L
 	}, nil
 }
 
-func (a Auth) LoginWithSudir(ctx context.Context, request domain.LoginSudirRequest) (*domain.LoginResponse, error) {
+func (a Auth) LoginWithOauth(ctx context.Context, request domain.LoginOauthRequest) (*domain.LoginResponse, error) {
 	var (
 		user *entity.User
 
@@ -150,41 +150,41 @@ func (a Auth) LoginWithSudir(ctx context.Context, request domain.LoginSudirReque
 	)
 
 	err := a.txRunner.AuthTransaction(ctx, func(ctx context.Context, tx AuthTransaction) error {
-		sudirUser, err := a.sudirService.Authenticate(ctx, request, tx)
+		oauthUser, err := a.oauthService.Authenticate(ctx, request, tx)
 
-		var authErr *entity.SudirAuthError
+		var authErr *entity.OauthAuthError
 		switch {
 		case errors.As(err, &authErr):
-			a.logger.Error(ctx, "sudir authenticate: error occurred", log.String("error", err.Error()))
+			a.logger.Error(ctx, "oauth authenticate: error occurred", log.String("error", err.Error()))
 			return domain.ErrUnauthenticated
 		case err != nil:
-			return errors.WithMessage(err, "sudir authenticate")
-		case sudirUser.SudirUserId == "" || sudirUser.Email == "":
-			a.logger.Error(ctx, "sudir authenticate: missing sudirUserId or email",
-				log.String("userId", sudirUser.SudirUserId),
-				log.String("email", sudirUser.Email))
+			return errors.WithMessage(err, "oauth authenticate")
+		case oauthUser.OauthUserId == "" || oauthUser.Email == "":
+			a.logger.Error(ctx, "oauth authenticate: missing oauthUserId or email",
+				log.String("userId", oauthUser.OauthUserId),
+				log.String("email", oauthUser.Email))
 			return domain.ErrUnauthenticated
 		}
 
-		user, err = tx.UpsertBySudirUserId(ctx, entity.User{
-			SudirUserId: &sudirUser.SudirUserId,
-			FirstName:   sudirUser.FirstName,
-			LastName:    sudirUser.LastName,
-			FullName:    sudirUser.FullName,
-			Email:       sudirUser.Email,
+		user, err = tx.UpsertByOauthUserId(ctx, entity.User{
+			OauthUserId: &oauthUser.OauthUserId,
+			FirstName:   oauthUser.FirstName,
+			LastName:    oauthUser.LastName,
+			FullName:    oauthUser.FullName,
+			Email:       oauthUser.Email,
 			Password:    "",
 			Blocked:     false,
 			UpdatedAt:   time.Now().UTC(),
 			CreatedAt:   time.Now().UTC(),
 		})
 		if errors.Is(err, domain.ErrUserIsBlocked) {
-			return errors.Errorf("user with sudir user id = %s is blocked", sudirUser.SudirUserId)
+			return errors.Errorf("user with oauth user id = %s is blocked", oauthUser.OauthUserId)
 		}
 		if err != nil {
-			return errors.WithMessage(err, "upsert by sudir user id")
+			return errors.WithMessage(err, "upsert by oauth user id")
 		}
 
-		err = tx.UpsertUserRoleLinks(ctx, int(user.Id), sudirUser.RoleIds)
+		err = tx.UpsertUserRoleLinks(ctx, int(user.Id), oauthUser.RoleIds)
 		if err != nil {
 			return errors.WithMessage(err, "upsert user role links")
 		}
@@ -206,7 +206,7 @@ func (a Auth) LoginWithSudir(ctx context.Context, request domain.LoginSudirReque
 		return nil, errors.WithMessage(err, "auth transaction")
 	}
 
-	a.auditService.SaveAuditAsync(ctx, user.Id, "Успешный вход через СУДИР", entity.EventSuccessLogin)
+	a.auditService.SaveAuditAsync(ctx, user.Id, "Успешный вход через OAuth", entity.EventSuccessLogin)
 
 	return &domain.LoginResponse{
 		Token:      tokenString,
