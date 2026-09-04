@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strconv"
 	"sync/atomic"
 	"testing"
@@ -54,7 +55,8 @@ func (s *AuthTestSuite) SetupTest() {
 	s.oauthClientName = fake.It[string]()
 
 	mocksrv, host := s.initMockOauth()
-	s.oauthCli.GlobalRequestConfig().BaseUrl = host
+	oauthHost, _ := url.JoinPath(host, "/blitz/")
+	s.oauthCli.GlobalRequestConfig().BaseUrl = oauthHost
 
 	remote := conf.Remote{
 		Oauth: &conf.Oauth{
@@ -325,7 +327,7 @@ func (s *AuthTestSuite) TestBruteForceLogin() {
 
 func (s *AuthTestSuite) initMockOauth() (*httptest.Server, string) {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/oauth/te", func(writer http.ResponseWriter, request *http.Request) {
+	mux.HandleFunc("/blitz/oauth/te", func(writer http.ResponseWriter, request *http.Request) {
 		res := entity.OauthTokenResponse{
 			OauthAuthError: nil,
 			IdToken:        "1",
@@ -336,7 +338,7 @@ func (s *AuthTestSuite) initMockOauth() (*httptest.Server, string) {
 		_, err = writer.Write(data)
 		s.NoError(err)
 	})
-	mux.HandleFunc("/oauth/me", func(writer http.ResponseWriter, request *http.Request) {
+	mux.HandleFunc("/blitz/oauth/me", func(writer http.ResponseWriter, request *http.Request) {
 		res := entity.OauthUserResponse{
 			OauthAuthError: nil,
 			Email:          "oauth@email.ru",
