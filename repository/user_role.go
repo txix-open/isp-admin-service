@@ -3,12 +3,13 @@ package repository
 import (
 	"context"
 
+	"isp-admin-service/entity"
+
 	"github.com/Masterminds/squirrel"
-	"github.com/pkg/errors"
 	"github.com/txix-open/isp-kit/db"
 	"github.com/txix-open/isp-kit/db/query"
+	"github.com/txix-open/isp-kit/errors"
 	"github.com/txix-open/isp-kit/metrics/sql_metrics"
-	"msp-admin-service/entity"
 )
 
 type UserRole struct {

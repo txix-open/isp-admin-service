@@ -3,9 +3,9 @@ package transaction
 import (
 	"context"
 
-	"msp-admin-service/repository"
-	"msp-admin-service/service"
-	"msp-admin-service/service/session_worker"
+	"isp-admin-service/repository"
+	"isp-admin-service/service"
+	"isp-admin-service/service/session_worker"
 
 	"github.com/txix-open/isp-kit/db"
 )

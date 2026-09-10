@@ -4,19 +4,20 @@ import (
 	"context"
 	"time"
 
-	"msp-admin-service/conf"
-	"msp-admin-service/controller"
-	"msp-admin-service/repository"
-	"msp-admin-service/routes"
-	"msp-admin-service/service"
-	"msp-admin-service/service/delete_old_audit_worker"
-	"msp-admin-service/service/inactive_worker"
-	"msp-admin-service/service/secure"
-	"msp-admin-service/service/session_worker"
-	"msp-admin-service/transaction"
+	"isp-admin-service/conf"
+	"isp-admin-service/controller"
+	"isp-admin-service/repository"
+	"isp-admin-service/routes"
+	"isp-admin-service/service"
+	"isp-admin-service/service/delete_old_audit_worker"
+	"isp-admin-service/service/inactive_worker"
+	"isp-admin-service/service/secure"
+	"isp-admin-service/service/session_worker"
+	"isp-admin-service/transaction"
 
 	"github.com/txix-open/isp-kit/bgjobx"
 	"github.com/txix-open/isp-kit/db"
+	"github.com/txix-open/isp-kit/errors"
 	"github.com/txix-open/isp-kit/grpc/endpoint"
 	"github.com/txix-open/isp-kit/grpc/isp"
 	"github.com/txix-open/isp-kit/http/httpcli"
@@ -29,16 +30,16 @@ type DB interface {
 }
 
 type Locator struct {
-	logger  log.Logger
-	httpCli *httpcli.Client
-	db      DB
+	logger   log.Logger
+	oauthCli *httpcli.Client
+	db       DB
 }
 
-func NewLocator(logger log.Logger, httpCli *httpcli.Client, db DB) Locator {
+func NewLocator(logger log.Logger, oauthCli *httpcli.Client, db DB) Locator {
 	return Locator{
-		logger:  logger,
-		httpCli: httpCli,
-		db:      db,
+		logger:   logger,
+		oauthCli: oauthCli,
+		db:       db,
 	}
 }
 
@@ -52,8 +53,8 @@ func (l Locator) Config(
 	ctx context.Context,
 	cfg conf.Remote,
 	jobPollInterval time.Duration,
-) Config {
-	sudirRepo := repository.NewSudir(l.httpCli, cfg.SudirAuth)
+) (Config, error) {
+	oauthRepo := repository.NewOauth(l.oauthCli)
 	roleRepo := repository.NewRole(l.db)
 	userRepo := repository.NewUser(l.db)
 	tokenRepo := repository.NewToken(l.db)
@@ -63,7 +64,13 @@ func (l Locator) Config(
 
 	auditService := service.NewAudit(ctx, l.logger, auditRepo, auditEventRepo, cfg.Audit.EventSettings)
 	tokenService := service.NewToken(tokenRepo, cfg.ExpireSec)
-	sudirService := service.NewSudir(cfg.SudirAuth, sudirRepo)
+
+	oauthBaseUrl, oauthSettings := l.getOauthSettings(cfg.Oauth)
+	oauthService, err := service.NewOauth(oauthSettings, oauthRepo)
+	if err != nil {
+		return Config{}, errors.WithMessage(err, "new oauth")
+	}
+
 	secureService := secure.NewService(tokenRepo, userRoleRepo)
 
 	txManager := transaction.NewManager(l.db)
@@ -80,13 +87,15 @@ func (l Locator) Config(
 		l.logger,
 	)
 	authService := service.NewAuth(
-		userRepo, txManager, tokenService, sudirService, auditService, l.logger,
+		userRepo, txManager, tokenService, oauthService, auditService, l.logger,
 		cfg.AntiBruteforce.DelayLoginRequestInSec,
 		cfg.AntiBruteforce.MaxInFlightLoginRequests,
 	)
 	roleService := service.NewRole(roleRepo, auditService)
 
 	permissionsService := service.NewPermission(cfg.Permissions)
+
+	uiSettingsService := service.NewUiSettings(oauthBaseUrl, oauthSettings)
 
 	userController := controller.NewUser(userService)
 	customizationController := controller.NewCustomization(cfg.UiDesign)
@@ -96,7 +105,7 @@ func (l Locator) Config(
 	auditController := controller.NewAudit(auditService)
 	roleController := controller.NewRole(roleService)
 	permissionController := controller.NewPermissions(permissionsService)
-
+	uiSettingsController := controller.NewUiSettings(uiSettingsService)
 	handler := routes.Handler(
 		endpoint.DefaultWrapper(l.logger),
 		routes.Controllers{
@@ -108,6 +117,7 @@ func (l Locator) Config(
 			Audit:         auditController,
 			Role:          roleController,
 			Permissions:   permissionController,
+			UiSettings:    uiSettingsController,
 		},
 	)
 
@@ -139,5 +149,13 @@ func (l Locator) Config(
 			PollInterval: jobPollInterval,
 			Handle:       expireSessionWorker,
 		}},
+	}, nil
+}
+
+func (l Locator) getOauthSettings(oauthAuth *conf.Oauth) (string, []conf.OauthClientConfig) {
+	if oauthAuth == nil {
+		return "", []conf.OauthClientConfig{}
 	}
+
+	return oauthAuth.Host, oauthAuth.Clients
 }

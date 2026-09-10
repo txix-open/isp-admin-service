@@ -1,9 +1,13 @@
 package tests_test
 
 import (
-	"context"
 	"testing"
 	"time"
+
+	"isp-admin-service/assembly"
+	"isp-admin-service/conf"
+	"isp-admin-service/domain"
+	"isp-admin-service/entity"
 
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -13,10 +17,6 @@ import (
 	"github.com/txix-open/isp-kit/test"
 	"github.com/txix-open/isp-kit/test/dbt"
 	"github.com/txix-open/isp-kit/test/grpct"
-	"msp-admin-service/assembly"
-	"msp-admin-service/conf"
-	"msp-admin-service/domain"
-	"msp-admin-service/entity"
 )
 
 func TestSecureSuite(t *testing.T) {
@@ -40,8 +40,9 @@ func (s *SecureSuite) SetupTest() {
 	remote := conf.Remote{
 		ExpireSec: 3600,
 	}
-	cfg := assembly.NewLocator(s.test.Logger(), httpCli, s.db).
-		Config(context.Background(), remote, time.Minute)
+	cfg, err := assembly.NewLocator(s.test.Logger(), httpCli, s.db).
+		Config(s.T().Context(), remote, time.Minute)
+	s.Require().NoError(err)
 
 	server, apiCli := grpct.TestServer(s.test, cfg.Handler)
 	s.test.T().Cleanup(func() {
@@ -65,7 +66,7 @@ func (s *SecureSuite) Test_Authenticate_HappyPath() {
 			Token: "happy_path",
 		}).
 		JsonResponseBody(&result).
-		Do(context.Background())
+		Do(s.T().Context())
 	s.require.NoError(err)
 	s.require.Equal(domain.SecureAuthResponse{
 		Authenticated: true,
@@ -89,7 +90,7 @@ func (s *SecureSuite) Test_Authenticate_StatusRevoked() {
 			Token: "revoked",
 		}).
 		JsonResponseBody(&result).
-		Do(context.Background())
+		Do(s.T().Context())
 	s.require.NoError(err)
 	s.require.Equal(domain.SecureAuthResponse{
 		Authenticated: false,
@@ -113,7 +114,7 @@ func (s *SecureSuite) Test_Authenticate_Expired() {
 			Token: "expired",
 		}).
 		JsonResponseBody(&result).
-		Do(context.Background())
+		Do(s.T().Context())
 	s.require.NoError(err)
 	s.require.Equal(domain.SecureAuthResponse{
 		Authenticated: false,
@@ -129,7 +130,7 @@ func (s *SecureSuite) Test_Authenticate_NotFound() {
 			Token: "not_found",
 		}).
 		JsonResponseBody(&result).
-		Do(context.Background())
+		Do(s.T().Context())
 	s.require.NoError(err)
 	s.require.Equal(domain.SecureAuthResponse{
 		Authenticated: false,
@@ -170,7 +171,7 @@ func (s *SecureSuite) Test_Authorize_HappyPath() {
 			Permission: "perm1",
 		}).
 		JsonResponseBody(&result).
-		Do(context.Background())
+		Do(s.T().Context())
 	s.require.NoError(err)
 	s.require.True(result.Authorized)
 
@@ -181,7 +182,7 @@ func (s *SecureSuite) Test_Authorize_HappyPath() {
 			Permission: "perm2",
 		}).
 		JsonResponseBody(&result).
-		Do(context.Background())
+		Do(s.T().Context())
 	s.require.NoError(err)
 	s.require.True(result.Authorized)
 
@@ -192,7 +193,7 @@ func (s *SecureSuite) Test_Authorize_HappyPath() {
 			Permission: "perm3",
 		}).
 		JsonResponseBody(&result).
-		Do(context.Background())
+		Do(s.T().Context())
 	s.require.NoError(err)
 	s.require.False(result.Authorized)
 }

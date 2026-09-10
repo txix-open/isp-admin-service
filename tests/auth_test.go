@@ -1,7 +1,6 @@
 package tests_test
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -11,13 +10,14 @@ import (
 	"testing"
 	"time"
 
-	"msp-admin-service/assembly"
-	"msp-admin-service/conf"
-	"msp-admin-service/domain"
-	"msp-admin-service/entity"
-	"msp-admin-service/repository"
+	"isp-admin-service/assembly"
+	"isp-admin-service/conf"
+	"isp-admin-service/domain"
+	"isp-admin-service/entity"
+	"isp-admin-service/repository"
 
-	"github.com/pkg/errors"
+	"github.com/txix-open/isp-kit/errors"
+	"github.com/txix-open/isp-kit/test/fake"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/stretchr/testify/suite"
@@ -40,27 +40,35 @@ func TestAuthTestSuite(t *testing.T) {
 type AuthTestSuite struct {
 	suite.Suite
 
-	test    *test.Test
-	db      *dbt.TestDb
-	grpcCli *client.Client
-	httpCli *httpcli.Client
+	test            *test.Test
+	db              *dbt.TestDb
+	grpcCli         *client.Client
+	oauthCli        *httpcli.Client
+	oauthClientName string
 }
 
 func (s *AuthTestSuite) SetupTest() {
 	testInstance, _ := test.New(s.T())
 	s.test = testInstance
 	s.db = dbt.New(testInstance, dbx.WithMigrationRunner("../migrations", testInstance.Logger()))
-	s.httpCli = httpcli.New()
+	s.oauthCli = httpcli.New()
+	s.oauthClientName = fake.It[string]()
 
-	mocksrv, host := s.initMockSudir()
-	sudirHost, _ := url.JoinPath(host, "/blitz/")
+	mocksrv, host := s.initMockOauth()
+	oauthHost, _ := url.JoinPath(host, "/blitz/")
+	s.oauthCli.GlobalRequestConfig().BaseUrl = oauthHost
 
 	remote := conf.Remote{
-		SudirAuth: &conf.SudirAuth{
-			ClientId:     "admin",
-			ClientSecret: "admin",
-			Host:         sudirHost,
-			RedirectURI:  "http://localhost",
+		Oauth: &conf.Oauth{
+			Host: host,
+			Clients: []conf.OauthClientConfig{
+				{
+					ClientName:   s.oauthClientName,
+					ClientId:     "admin",
+					ClientSecret: "admin",
+					RedirectURI:  "http://localhost",
+				},
+			},
 		},
 		ExpireSec: 3600,
 		AntiBruteforce: conf.AntiBruteforce{
@@ -68,8 +76,10 @@ func (s *AuthTestSuite) SetupTest() {
 			DelayLoginRequestInSec:   1,
 		},
 	}
-	cfg := assembly.NewLocator(testInstance.Logger(), s.httpCli, s.db).
-		Config(context.Background(), remote, time.Minute)
+
+	cfg, err := assembly.NewLocator(testInstance.Logger(), s.oauthCli, s.db).
+		Config(s.T().Context(), remote, time.Minute)
+	s.Require().NoError(err)
 
 	server, apiCli := grpct.TestServer(testInstance, cfg.Handler)
 	s.grpcCli = apiCli
@@ -95,7 +105,7 @@ func (s *AuthTestSuite) TestLoginHappyPath() {
 			Password: "password",
 		}).
 		JsonResponseBody(&response).
-		Do(context.Background())
+		Do(s.T().Context())
 	s.Require().NoError(err)
 
 	tokenInfo := SelectTokenEntityByToken(s.db, response.Token)
@@ -110,7 +120,7 @@ func (s *AuthTestSuite) TestLoginNotFound() {
 			Email:    "a1@a.ru",
 			Password: "password",
 		}).
-		Do(context.Background())
+		Do(s.T().Context())
 	s.Require().Error(err)
 	st, ok := status.FromError(err)
 	s.Require().True(ok)
@@ -133,7 +143,7 @@ func (s *AuthTestSuite) TestBlockedUser() {
 			Email:    "a@a.ru",
 			Password: "password",
 		}).
-		Do(context.Background())
+		Do(s.T().Context())
 	s.Require().Error(err)
 	st, ok := status.FromError(err)
 	s.Require().True(ok)
@@ -155,7 +165,7 @@ func (s *AuthTestSuite) TestLoginWrongPassword() {
 			Email:    "a@a.ru",
 			Password: "WrongPassword",
 		}).
-		Do(context.Background())
+		Do(s.T().Context())
 	s.Require().Error(err)
 	st, ok := status.FromError(err)
 	s.Require().True(ok)
@@ -164,25 +174,42 @@ func (s *AuthTestSuite) TestLoginWrongPassword() {
 	time.Sleep(1 * time.Second) // wait for go SaveAuditAsync()
 }
 
-func (s *AuthTestSuite) TestSudirLoginHappyPath() {
+func (s *AuthTestSuite) TestOauthLoginHappyPath() {
 	response := domain.LoginResponse{}
 
-	err := s.grpcCli.Invoke("admin/auth/login_with_sudir").
-		JsonRequestBody(domain.LoginSudirRequest{
-			AuthCode: "code",
+	err := s.grpcCli.Invoke("admin/auth/login_with_oauth").
+		JsonRequestBody(domain.LoginOauthRequest{
+			AuthCode:   "code",
+			ClientName: s.oauthClientName,
 		}).
 		JsonResponseBody(&response).
-		Do(context.Background())
+		Do(s.T().Context())
 	s.Require().NoError(err)
 	user := entity.User{}
-	s.db.Must().SelectRow(&user, "select id, email, full_name from users where sudir_user_id = $1", "sudirUser1")
-	s.Require().Equal("sudir@email.ru", user.Email)
+	s.db.Must().SelectRow(&user, "select id, email, full_name from users where oauth_user_id = $1", "oauthUser1")
+	s.Require().Equal("oauth@email.ru", user.Email)
 	s.Require().Equal("surname name patronymic", user.FullName)
 
 	tokenInfo := SelectTokenEntityByToken(s.db, response.Token)
 	s.Require().Equal(tokenInfo.UserId, user.Id)
 
 	time.Sleep(1 * time.Second) // wait for go SaveAuditAsync()
+}
+
+func (s *AuthTestSuite) TestOauthLogin_UnknownClient() {
+	response := domain.LoginResponse{}
+
+	err := s.grpcCli.Invoke("admin/auth/login_with_oauth").
+		JsonRequestBody(domain.LoginOauthRequest{
+			AuthCode:   "code",
+			ClientName: s.oauthClientName + fake.It[string](),
+		}).
+		JsonResponseBody(&response).
+		Do(s.T().Context())
+	s.Require().Error(err)
+	st, ok := status.FromError(err)
+	s.Require().True(ok)
+	s.Require().Equal(codes.Unauthenticated, st.Code())
 }
 
 func (s *AuthTestSuite) Test_Logout_HappyPath() {
@@ -196,7 +223,7 @@ func (s *AuthTestSuite) Test_Logout_HappyPath() {
 	})
 	err := s.grpcCli.Invoke("admin/auth/logout").
 		AppendMetadata(domain.AdminAuthIdHeader, strconv.Itoa(int(userId))).
-		Do(context.Background())
+		Do(s.T().Context())
 	s.Require().NoError(err)
 
 	tokenInfo := SelectTokenEntityByToken(s.db, "token-841297641213")
@@ -208,12 +235,12 @@ func (s *AuthTestSuite) Test_Logout_HappyPath() {
 func (s *AuthTestSuite) Test_Logout_NotFound() {
 	err := s.grpcCli.Invoke("admin/auth/logout").
 		AppendMetadata(domain.AdminAuthIdHeader, "0143218411981").
-		Do(context.Background())
+		Do(s.T().Context())
 	s.Require().NoError(err)
 
 	time.Sleep(time.Second)
 	audit := repository.NewAudit(s.db)
-	auditList, err := audit.AllByRequest(context.Background(), domain.AuditPageRequest{
+	auditList, err := audit.AllByRequest(s.T().Context(), domain.AuditPageRequest{
 		LimitOffestParams: domain.LimitOffestParams{
 			Limit:  10,
 			Offset: 0,
@@ -241,7 +268,7 @@ func (s *AuthTestSuite) Test_Logout_AlreadyRevoke() {
 	})
 	err := s.grpcCli.Invoke("admin/auth/logout").
 		AppendMetadata(domain.AdminAuthIdHeader, strconv.Itoa(int(userId))).
-		Do(context.Background())
+		Do(s.T().Context())
 	s.Require().NoError(err)
 
 	tokenInfo := SelectTokenEntityByToken(s.db, "token-148623719462")
@@ -260,7 +287,7 @@ func (s *AuthTestSuite) TestBruteForceLogin() {
 
 	tooManyRequestsErrorCount := &atomic.Int32{}
 	unauthorizedErrorCount := &atomic.Int32{}
-	group, ctx := errgroup.WithContext(context.Background())
+	group, ctx := errgroup.WithContext(s.T().Context())
 	for index := range 100 {
 		group.Go(func() error {
 			start := time.Now()
@@ -298,11 +325,11 @@ func (s *AuthTestSuite) TestBruteForceLogin() {
 	time.Sleep(2 * time.Second) // wait for go SaveAuditAsync()
 }
 
-func (s *AuthTestSuite) initMockSudir() (*httptest.Server, string) {
+func (s *AuthTestSuite) initMockOauth() (*httptest.Server, string) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/blitz/oauth/te", func(writer http.ResponseWriter, request *http.Request) {
-		res := entity.SudirTokenResponse{
-			SudirAuthError: nil,
+		res := entity.OauthTokenResponse{
+			OauthAuthError: nil,
 			IdToken:        "1",
 			AccessToken:    "token",
 		}
@@ -312,11 +339,11 @@ func (s *AuthTestSuite) initMockSudir() (*httptest.Server, string) {
 		s.NoError(err)
 	})
 	mux.HandleFunc("/blitz/oauth/me", func(writer http.ResponseWriter, request *http.Request) {
-		res := entity.SudirUserResponse{
-			SudirAuthError: nil,
-			Email:          "sudir@email.ru",
+		res := entity.OauthUserResponse{
+			OauthAuthError: nil,
+			Email:          "oauth@email.ru",
 			Groups:         []string{"DIT-KKD-Admins"},
-			Sub:            "sudirUser1",
+			Sub:            "oauthUser1",
 			GivenName:      "name",
 			FamilyName:     "surname",
 			Name:           "surname name patronymic",

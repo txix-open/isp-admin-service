@@ -1,9 +1,9 @@
 package main
 
 import (
-	"msp-admin-service/assembly"
-	"msp-admin-service/conf"
-	"msp-admin-service/routes"
+	"isp-admin-service/assembly"
+	"isp-admin-service/conf"
+	"isp-admin-service/routes"
 
 	"github.com/txix-open/isp-kit/bootstrap"
 	"github.com/txix-open/isp-kit/cluster"
@@ -12,7 +12,7 @@ import (
 
 var version = "1.0.0"
 
-// @title msp-admin-service
+// @title isp-admin-service
 // @version 1.0.0
 // @description сервис управления администраторами
 
@@ -21,10 +21,9 @@ var version = "1.0.0"
 // @host localhost:9000
 // @BasePath /api/admin
 
-//go:generate swag init --parseDependency
-//go:generate rm -f docs/swagger.json docs/docs.go
+//go:generate swag init -pd -ot json -eot json
 func main() {
-	boot := bootstrap.New(version, conf.Remote{}, routes.EndpointDescriptors(), cluster.GrpcTransport)
+	boot := bootstrap.New(version, conf.Remote{}, cluster.Endpoints(routes.EndpointDescriptors()), cluster.GrpcTransport)
 	app := boot.App
 	logger := app.Logger()
 

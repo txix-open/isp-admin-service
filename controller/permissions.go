@@ -3,7 +3,7 @@ package controller
 import (
 	"context"
 
-	"msp-admin-service/domain"
+	"isp-admin-service/domain"
 )
 
 type permissionsService interface {

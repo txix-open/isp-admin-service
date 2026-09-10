@@ -1,0 +1,46 @@
+package entity
+
+import (
+	"fmt"
+)
+
+type ClientSetting struct {
+	AuthCode     string
+	ClientId     string
+	ClientSecret string
+	RedirectURI  string
+}
+
+// nolint:tagliatelle,godoclint
+type OauthAuthError struct {
+	ErrorName        string `json:"error"`
+	ErrorDescription string `json:"error_description"`
+}
+
+func (s *OauthAuthError) Error() string {
+	return fmt.Sprintf("error: %s; description: %s", s.ErrorName, s.ErrorDescription)
+}
+
+// nolint:tagliatelle,errname,godoclint
+type OauthUserResponse struct {
+	*OauthAuthError
+
+	Email      string   `json:"email"`
+	Groups     []string `json:"groups"`
+	Sub        string   `json:"sub"`
+	GivenName  string   `json:"given_name"`
+	FamilyName string   `json:"family_name"`
+	Name       string   `json:"name"`
+}
+
+// nolint:tagliatelle,errname,godoclint
+type OauthTokenResponse struct {
+	*OauthAuthError
+
+	IdToken      string `json:"id_token"`
+	AccessToken  string `json:"access_token"`
+	ExpiresIn    int    `json:"expires_in"`
+	Scope        string `json:"scope"`
+	RefreshToken string `json:"refresh_token"`
+	TokenType    string `json:"token_type"`
+}

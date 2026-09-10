@@ -1,3 +1,4 @@
+//nolint:lll
 package conf
 
 import (
@@ -10,7 +11,7 @@ import (
 )
 
 // nolint: gochecknoinits
-func init() { //
+func init() {
 	schema.CustomGenerators.Register("logLevel", func(field reflect.StructField, t *jsonschema.Schema) {
 		t.Type = "string"
 		t.Enum = []any{"debug", "info", "error", "fatal"}
@@ -18,13 +19,12 @@ func init() { //
 }
 
 type Remote struct {
-	Audit     Audit
-	Database  dbx.Config
-	ExpireSec int      `validate:"required" schema:"Время жизни токена в секундах,in seconds"`
-	UiDesign  UIDesign `schema:"Кастомизация интерфейса"`
-	//nolint:lll
+	Audit               Audit               `schema:"Настройки audit"`
+	Database            dbx.Config          `schema:"Настройка подключения к БД"`
+	ExpireSec           int                 `validate:"required" schema:"Время жизни токена в секундах,in seconds"`
+	UiDesign            UIDesign            `schema:"Кастомизация интерфейса"`
 	IdleTimeoutMs       int                 `schema:"Время бездействия пользователя,в милисекундах, после указанного времени пользователь будет разлогирован из интерфейса в браузере, по умолчанию отключено"`
-	SudirAuth           *SudirAuth          `schema:"СУДИР авторизация"`
+	Oauth               *Oauth              `schema:"OAuth авторизация"`
 	LogLevel            log.Level           `schemaGen:"logLevel" schema:"Уровень логирования"`
 	AntiBruteforce      AntiBruteforce      `schema:"Настройки антибрут для admin login"`
 	BlockInactiveWorker BlockInactiveWorker `validate:"required" schema:"Блокировка неактивных УЗ"`
@@ -32,30 +32,41 @@ type Remote struct {
 }
 
 type Audit struct {
-	EventSettings []AuditEventSetting
-	AuditTTl      AuditTTlSetting
+	EventSettings []AuditEventSetting `schema:"Маппинг событий"`
+	AuditTTl      AuditTTlSetting     `schema:"Настройки TTL для audit"`
 }
 
 type AuditTTlSetting struct {
-	TimeToLiveInMin       int `validate:"required"`
-	ExpireSyncPeriodInMin int `validate:"required"`
+	TimeToLiveInMin       int `validate:"required" schema:"TTL события в минутах"`
+	ExpireSyncPeriodInMin int `validate:"required" schema:"Интервал запуска воркера"`
 }
 
 type AuditEventSetting struct {
-	Event string
-	Name  string
+	Event string `schema:"Ключ события"`
+	Name  string `schema:"Пользовательское название события"`
 }
 
 type UIDesign struct {
 	Name         string `schema:"Название стенда"`
-	PrimaryColor string `schema:"Цвет в HEX, примеры: #ff4d4f #fa8c16 #a0d911 #1890ff #722ed1 #d4b106 #e91e63 #ff5722 #795548 #abb8c3 #525252 #689f38"`
+	PrimaryColor string `schema:"Цвет в HEX,примеры: #ff4d4f #fa8c16 #a0d911 #1890ff #722ed1 #d4b106 #e91e63 #ff5722 #795548 #abb8c3 #525252 #689f38"`
 }
 
-type SudirAuth struct {
-	ClientId     string `validate:"required"`
-	ClientSecret string `validate:"required"`
-	Host         string `validate:"required" schema:"Хост, пример https://sudir.mos.ru"`
-	RedirectURI  string `validate:"required"`
+type Oauth struct {
+	Host    string              `validate:"required" schema:"Базовый путь до методов, пример https://oauth.example.com"`
+	Clients []OauthClientConfig `validate:"omitempty,min=1" schema:"Настройка взаимодействия для логина по authCode"`
+}
+
+type OauthClientConfig struct {
+	ClientName   string          `validate:"required" schema:"Уникальное имя конфигурации клиента"`
+	ClientId     string          `validate:"required" schema:"Идентификатор клиента,выданный для basicAuth"`
+	ClientSecret string          `validate:"required" schema:"Пароль клиента,выданный для basicAuth"`
+	RedirectURI  string          `validate:"required" schema:"URI для редиректа,передаётся в запросе токена в query"`
+	UiSetting    *UiOauthSetting `schema:"Настройки OAuth для админки"`
+}
+
+type UiOauthSetting struct {
+	LoginEndpoint  string `validate:"required" schema:"Эндпоинт для входа через OAuth в адмиинке,может содержать query параметры,client_id и redirect_uri добавляются автоматически"`
+	LogoutEndpoint string `validate:"required" schema:"Эндпоинт для выхода через OAuth в адмиинке"`
 }
 
 type AntiBruteforce struct {
@@ -69,6 +80,6 @@ type BlockInactiveWorker struct {
 }
 
 type Permission struct {
-	Key  string
-	Name string
+	Key  string `schema:"Ключ прав"`
+	Name string `schema:"Пользовательское название"`
 }

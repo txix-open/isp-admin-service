@@ -4,13 +4,14 @@ import (
 	"context"
 	"database/sql"
 
+	"isp-admin-service/domain"
+	"isp-admin-service/entity"
+
 	"github.com/Masterminds/squirrel"
-	"github.com/pkg/errors"
 	"github.com/txix-open/isp-kit/db"
 	"github.com/txix-open/isp-kit/db/query"
+	"github.com/txix-open/isp-kit/errors"
 	"github.com/txix-open/isp-kit/metrics/sql_metrics"
-	"msp-admin-service/domain"
-	"msp-admin-service/entity"
 )
 
 type Role struct {

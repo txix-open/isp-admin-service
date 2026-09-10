@@ -3,8 +3,8 @@ package service
 import (
 	"context"
 
-	"msp-admin-service/conf"
-	"msp-admin-service/domain"
+	"isp-admin-service/conf"
+	"isp-admin-service/domain"
 )
 
 type Permission struct {
