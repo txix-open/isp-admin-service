@@ -117,7 +117,7 @@ func (s *SessionSuite) Test_All_Session() {
 
 	// Дефолт сортировка, лимит и оффсет
 	request := domain.SessionPageRequest{
-		LimitOffestParams: domain.LimitOffestParams{
+		LimitOffestParams: domain.LimitOffestParams{ //nolint:modernize
 			Limit:  5,
 			Offset: 1,
 		},
@@ -208,7 +208,7 @@ func (s *SessionSuite) Test_All_Session() {
 	}
 
 	request = domain.SessionPageRequest{
-		LimitOffestParams: domain.LimitOffestParams{
+		LimitOffestParams: domain.LimitOffestParams{ //nolint:modernize
 			Limit:  5,
 			Offset: 0,
 		},

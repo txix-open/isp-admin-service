@@ -205,10 +205,10 @@ func (r Token) LastAccessByUserIds(ctx context.Context, userIds []int) (map[int6
 	ctx = sql_metrics.OperationLabelToContext(ctx, "Token.LastAccessByUserIds")
 
 	query, args, err := query.New().
-		Select("user_id", "max(created_at) as created_at").
+		Select(userIdTokensColumn, "max(created_at) as created_at").
 		From("tokens").
-		Where(squirrel.Eq{"user_id": userIds}).
-		GroupBy("user_id").
+		Where(squirrel.Eq{userIdTokensColumn: userIds}).
+		GroupBy(userIdTokensColumn).
 		ToSql()
 	if err != nil {
 		return nil, errors.WithMessage(err, "build query")
@@ -238,7 +238,7 @@ func reqTokenQuery(q squirrel.SelectBuilder, reqQuery *domain.SessionQuery) squi
 	}
 
 	if reqQuery.UserId != nil {
-		q = q.Where(squirrel.Eq{"user_id": reqQuery.UserId})
+		q = q.Where(squirrel.Eq{userIdTokensColumn: reqQuery.UserId})
 	}
 
 	if reqQuery.Status != nil {
@@ -246,8 +246,8 @@ func reqTokenQuery(q squirrel.SelectBuilder, reqQuery *domain.SessionQuery) squi
 	}
 
 	if reqQuery.CreatedAt != nil {
-		q = q.Where(squirrel.GtOrEq{"created_at": reqQuery.CreatedAt.From}).
-			Where(squirrel.Lt{"created_at": reqQuery.CreatedAt.To})
+		q = q.Where(squirrel.GtOrEq{createdAtTokensColumn: reqQuery.CreatedAt.From}).
+			Where(squirrel.Lt{createdAtTokensColumn: reqQuery.CreatedAt.To})
 	}
 
 	if reqQuery.ExpiredAt != nil {

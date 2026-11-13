@@ -48,7 +48,7 @@ func (u User) GetUserByEmail(ctx context.Context, email string) (*entity.User, e
 			updatedAtUsersColumn, oauthUserIdUsersColumn, blockedUsersColumn, descriptionUsersColumn, lastActiveAtUsersColumn,
 			fullNameUsersColumn).
 		From("users").
-		Where(squirrel.Eq{"email": email}).
+		Where(squirrel.Eq{emailUsersColumn: email}).
 		ToSql()
 	if err != nil {
 		return nil, errors.WithMessage(err, "build query")
@@ -217,7 +217,7 @@ func (u User) GetUsersByEmail(ctx context.Context, email string) ([]entity.User,
 			updatedAtUsersColumn, oauthUserIdUsersColumn, blockedUsersColumn, descriptionUsersColumn, lastActiveAtUsersColumn,
 			fullNameUsersColumn).
 		From("users").
-		Where(squirrel.Eq{"email": email}).
+		Where(squirrel.Eq{emailUsersColumn: email}).
 		ToSql()
 	if err != nil {
 		return nil, errors.WithMessage(err, "build query")

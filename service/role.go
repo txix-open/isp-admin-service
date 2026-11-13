@@ -11,6 +11,12 @@ import (
 	"github.com/txix-open/isp-kit/errors"
 )
 
+const (
+	roleNameLabel        = "Название"
+	roleGroupLabel       = "Группа ЕСК"
+	rolePermissionsLabel = "Разрешения"
+)
+
 type roleRoleRepo interface {
 	All(ctx context.Context) ([]entity.Role, error)
 	InsertRole(ctx context.Context, role entity.Role) (*entity.Role, error)
@@ -69,13 +75,13 @@ func (u Role) Create(ctx context.Context, req domain.CreateRoleRequest, adminId 
 
 	slices.Sort(role.Permissions)
 	diff := diffToString(map[string]any{
-		"Название":   "",
-		"Группа ЕСК": "",
-		"Разрешения": []int{},
+		roleNameLabel:        "",
+		roleGroupLabel:       "",
+		rolePermissionsLabel: []int{},
 	}, map[string]any{
-		"Название":   role.Name,
-		"Группа ЕСК": role.ExternalGroup,
-		"Разрешения": role.Permissions,
+		roleNameLabel:        role.Name,
+		roleGroupLabel:       role.ExternalGroup,
+		rolePermissionsLabel: role.Permissions,
 	})
 	u.auditService.SaveAuditAsync(ctx, adminId,
 		fmt.Sprintf("Роль. Создание новой роли %s. Причина: %s. \n %s", req.Name, req.ChangeMessage, diff),
@@ -119,13 +125,13 @@ func (u Role) Update(ctx context.Context, req domain.UpdateRoleRequest, adminId 
 	slices.Sort(oldRole.Permissions)
 	slices.Sort(role.Permissions)
 	diff := diffToString(map[string]any{
-		"Название":   oldRole.Name,
-		"Группа ЕСК": oldRole.ExternalGroup,
-		"Разрешения": oldRole.Permissions,
+		roleNameLabel:        oldRole.Name,
+		roleGroupLabel:       oldRole.ExternalGroup,
+		rolePermissionsLabel: oldRole.Permissions,
 	}, map[string]any{
-		"Название":   role.Name,
-		"Группа ЕСК": role.ExternalGroup,
-		"Разрешения": role.Permissions,
+		roleNameLabel:        role.Name,
+		roleGroupLabel:       role.ExternalGroup,
+		rolePermissionsLabel: role.Permissions,
 	})
 	u.auditService.SaveAuditAsync(ctx, adminId,
 		fmt.Sprintf("Роль. Изменение роли %s. Причина: %s. \n %s", req.Name, req.ChangeMessage, diff),

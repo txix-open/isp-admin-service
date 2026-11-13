@@ -49,7 +49,7 @@ func TestInactiveWorker(t *testing.T) {
 	require.True(user.Blocked)
 
 	list, err := repository.NewAudit(db).AllByRequest(t.Context(), domain.AuditPageRequest{
-		LimitOffestParams: domain.LimitOffestParams{
+		LimitOffestParams: domain.LimitOffestParams{ //nolint:modernize
 			Limit:  10,
 			Offset: 0,
 		},

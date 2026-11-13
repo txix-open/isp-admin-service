@@ -16,6 +16,13 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+const (
+	userFullNameLabel    = "ФИО"
+	userDescriptionLabel = "Описание"
+	userEmailLabel       = "Email"
+	userRolesLabel       = "Роли (ID)"
+)
+
 type UserTransaction interface {
 	UserRepo
 	UserRoleRepo
@@ -253,15 +260,15 @@ func (u User) CreateUser(ctx context.Context, req domain.CreateUserRequest, admi
 
 	slices.Sort(req.Roles)
 	diff := diffToString(map[string]any{
-		"ФИО":       "",
-		"Описание":  "",
-		"Email":     "",
-		"Роли (ID)": []int{},
+		userFullNameLabel:    "",
+		userDescriptionLabel: "",
+		userEmailLabel:       "",
+		userRolesLabel:       []int{},
 	}, map[string]any{
-		"ФИО":       usr.FullName,
-		"Описание":  req.Description,
-		"Email":     req.Email,
-		"Роли (ID)": req.Roles,
+		userFullNameLabel:    usr.FullName,
+		userDescriptionLabel: req.Description,
+		userEmailLabel:       req.Email,
+		userRolesLabel:       req.Roles,
 	})
 	u.auditService.SaveAuditAsync(ctx, adminId,
 		fmt.Sprintf("Пользователь. Создание пользователя %d. \n %s", usr.Id, diff),
@@ -342,15 +349,15 @@ func (u User) UpdateUser(ctx context.Context, req domain.UpdateUserRequest, admi
 
 	slices.Sort(req.Roles)
 	diff := diffToString(map[string]any{
-		"ФИО":       user.FullName,
-		"Описание":  user.Description,
-		"Email":     user.Email,
-		"Роли (ID)": RolesIds(oldRoles),
+		userFullNameLabel:    user.FullName,
+		userDescriptionLabel: user.Description,
+		userEmailLabel:       user.Email,
+		userRolesLabel:       RolesIds(oldRoles),
 	}, map[string]any{
-		"ФИО":       updatedUser.FullName,
-		"Описание":  req.Description,
-		"Email":     req.Email,
-		"Роли (ID)": req.Roles,
+		userFullNameLabel:    updatedUser.FullName,
+		userDescriptionLabel: req.Description,
+		userEmailLabel:       req.Email,
+		userRolesLabel:       req.Roles,
 	})
 	u.auditService.SaveAuditAsync(ctx, adminId,
 		fmt.Sprintf("Пользователь. Изменение пользователя %d.\n %s", updatedUser.Id, diff),

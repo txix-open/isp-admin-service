@@ -21,7 +21,7 @@ var version = "1.0.0"
 // @host localhost:9000
 // @BasePath /api/admin
 
-//go:generate swag init -pd -ot json -eot json
+//go:generate swag init -pd -ot json
 func main() {
 	boot := bootstrap.New(version, conf.Remote{}, cluster.Endpoints(routes.EndpointDescriptors()), cluster.GrpcTransport)
 	app := boot.App
