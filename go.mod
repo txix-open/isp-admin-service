@@ -1,6 +1,6 @@
 module isp-admin-service
 
-go 1.26.0
+go 1.27
 
 require (
 	github.com/Masterminds/squirrel v1.5.4
@@ -8,7 +8,7 @@ require (
 	github.com/iancoleman/strcase v0.3.0
 	github.com/stretchr/testify v1.12.1
 	github.com/txix-open/bgjob v1.6.0
-	github.com/txix-open/isp-kit v1.74.1
+	github.com/txix-open/isp-kit v1.75.0
 	github.com/txix-open/jsonschema v1.3.0
 	golang.org/x/crypto v0.55.0
 	golang.org/x/sync v0.22.0

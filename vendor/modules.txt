@@ -213,8 +213,8 @@ github.com/txix-open/etp/v4/bpool
 github.com/txix-open/etp/v4/internal
 github.com/txix-open/etp/v4/msg
 github.com/txix-open/etp/v4/store
-# github.com/txix-open/isp-kit v1.74.1
-## explicit; go 1.26.0
+# github.com/txix-open/isp-kit v1.75.0
+## explicit; go 1.27
 github.com/txix-open/isp-kit/app
 github.com/txix-open/isp-kit/bgjobx
 github.com/txix-open/isp-kit/bgjobx/handler
