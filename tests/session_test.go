@@ -117,10 +117,8 @@ func (s *SessionSuite) Test_All_Session() {
 
 	// Дефолт сортировка, лимит и оффсет
 	request := domain.SessionPageRequest{
-		LimitOffestParams: domain.LimitOffestParams{
-			Limit:  5,
-			Offset: 1,
-		},
+		Limit:  5,
+		Offset: 1,
 	}
 
 	var response *domain.SessionResponse
@@ -208,10 +206,8 @@ func (s *SessionSuite) Test_All_Session() {
 	}
 
 	request = domain.SessionPageRequest{
-		LimitOffestParams: domain.LimitOffestParams{
-			Limit:  5,
-			Offset: 0,
-		},
+		Limit:  5,
+		Offset: 0,
 		Order: &domain.OrderParams{
 			Field: "id",
 			Type:  "desc",

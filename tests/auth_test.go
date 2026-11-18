@@ -241,10 +241,8 @@ func (s *AuthTestSuite) Test_Logout_NotFound() {
 	time.Sleep(time.Second)
 	audit := repository.NewAudit(s.db)
 	auditList, err := audit.AllByRequest(s.T().Context(), domain.AuditPageRequest{
-		LimitOffestParams: domain.LimitOffestParams{
-			Limit:  10,
-			Offset: 0,
-		},
+		Limit:  10,
+		Offset: 0,
 		Order: &domain.OrderParams{
 			Field: "created_at",
 			Type:  "desc",
