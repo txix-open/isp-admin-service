@@ -18,9 +18,10 @@ import (
 	"github.com/txix-open/isp-kit/bgjobx"
 	"github.com/txix-open/isp-kit/db"
 	"github.com/txix-open/isp-kit/errors"
-	"github.com/txix-open/isp-kit/grpc/endpoint"
-	"github.com/txix-open/isp-kit/grpc/isp"
+	httpEndpoint "github.com/txix-open/isp-kit/http/endpoint"
+	"github.com/txix-open/isp-kit/http/endpoint/httplog"
 	"github.com/txix-open/isp-kit/http/httpcli"
+	"github.com/txix-open/isp-kit/http/router"
 	"github.com/txix-open/isp-kit/log"
 )
 
@@ -30,21 +31,23 @@ type DB interface {
 }
 
 type Locator struct {
-	logger   log.Logger
-	oauthCli *httpcli.Client
-	db       DB
+	logger      log.Logger
+	downloadCli *httpcli.Client
+	oauthCli    *httpcli.Client
+	db          DB
 }
 
-func NewLocator(logger log.Logger, oauthCli *httpcli.Client, db DB) Locator {
+func NewLocator(logger log.Logger, oauthCli *httpcli.Client, downloadCli *httpcli.Client, db DB) Locator {
 	return Locator{
-		logger:   logger,
-		oauthCli: oauthCli,
-		db:       db,
+		logger:      logger,
+		downloadCli: downloadCli,
+		oauthCli:    oauthCli,
+		db:          db,
 	}
 }
 
 type Config struct {
-	Handler  isp.BackendServiceServer
+	Handler  *router.Router
 	BgJobCfg []bgjobx.WorkerConfig
 }
 
@@ -61,9 +64,11 @@ func (l Locator) Config(
 	auditRepo := repository.NewAudit(l.db)
 	auditEventRepo := repository.NewAuditEvent(l.db)
 	userRoleRepo := repository.NewUserRole(l.db)
+	adminRepo := repository.NewAdmin(l.downloadCli)
 
 	auditService := service.NewAudit(ctx, l.logger, auditRepo, auditEventRepo, cfg.Audit.EventSettings)
 	tokenService := service.NewToken(tokenRepo, cfg.ExpireSec)
+	downloadService := service.NewDownload(adminRepo)
 
 	oauthBaseUrl, oauthSettings := l.getOauthSettings(cfg.Oauth)
 	oauthService, err := service.NewOauth(oauthSettings, oauthRepo)
@@ -106,8 +111,11 @@ func (l Locator) Config(
 	roleController := controller.NewRole(roleService)
 	permissionController := controller.NewPermissions(permissionsService)
 	uiSettingsController := controller.NewUiSettings(uiSettingsService)
+	downloadController := controller.NewDownload(downloadService)
+
+	wrapper := httpEndpoint.DefaultWrapper(l.logger, httplog.Log(l.logger, true))
 	handler := routes.Handler(
-		endpoint.DefaultWrapper(l.logger),
+		wrapper,
 		routes.Controllers{
 			User:          userController,
 			Customization: customizationController,
@@ -118,6 +126,7 @@ func (l Locator) Config(
 			Role:          roleController,
 			Permissions:   permissionController,
 			UiSettings:    uiSettingsController,
+			Download:      downloadController,
 		},
 	)
 

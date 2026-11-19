@@ -5,6 +5,7 @@ import "time"
 type User struct {
 	OauthUserId          *string
 	Id                   int64
+	Roles                []int
 	FirstName            string
 	LastName             string
 	FullName             string
