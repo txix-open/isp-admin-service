@@ -13,14 +13,15 @@ const (
 )
 
 type Role struct {
-	Id            int
-	Name          string
-	ExternalGroup string
-	Permissions   PermList
-	Immutable     bool
-	Exclusive     bool
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
+	Id               int
+	Name             string
+	ExternalGroup    string
+	ApplicationGroup string
+	Permissions      PermList
+	Immutable        bool
+	Exclusive        bool
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
 }
 
 type PermList []string

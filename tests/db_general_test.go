@@ -42,9 +42,13 @@ func InsertRole(db *dbt.TestDb, role entity.Role) int64 {
 	}
 	q, args, err := query.New().
 		Insert("roles").
-		Columns("name", "permissions").
-		Values(role.Name, role.Permissions).
-		Suffix("ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name, permissions = EXCLUDED.permissions RETURNING id").
+		Columns("name", "permissions", "application_group").
+		Values(role.Name, role.Permissions, role.ApplicationGroup).
+		Suffix(`ON CONFLICT (name) DO UPDATE SET
+			name = EXCLUDED.name,
+			permissions = EXCLUDED.permissions,
+			application_group = EXCLUDED.application_group
+			RETURNING id`).
 		ToSql()
 	if err != nil {
 		panic(errors.WithMessagef(err, "insert role"))
