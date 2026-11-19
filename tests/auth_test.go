@@ -27,8 +27,6 @@ import (
 	"github.com/txix-open/isp-kit/json"
 	"github.com/txix-open/isp-kit/test"
 	"github.com/txix-open/isp-kit/test/dbt"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 func TestAuthTestSuite(t *testing.T) {
@@ -119,11 +117,13 @@ func (s *AuthTestSuite) TestLoginNotFound() {
 			Email:    "a1@a.ru",
 			Password: "password",
 		}).
+		StatusCodeToError().
 		DoWithoutResponse(s.T().Context())
 	s.Require().Error(err)
-	st, ok := status.FromError(err)
-	s.Require().True(ok)
-	s.Require().Equal(codes.Unauthenticated, st.Code())
+
+	var httpErr httpcli.ErrorResponse
+	s.Require().ErrorAs(err, &httpErr)
+	s.Require().Equal(http.StatusUnauthorized, httpErr.StatusCode)
 
 	time.Sleep(1 * time.Second) // wait for go SaveAuditAsync()
 }
@@ -142,11 +142,13 @@ func (s *AuthTestSuite) TestBlockedUser() {
 			Email:    "a@a.ru",
 			Password: "password",
 		}).
+		StatusCodeToError().
 		DoWithoutResponse(s.T().Context())
 	s.Require().Error(err)
-	st, ok := status.FromError(err)
-	s.Require().True(ok)
-	s.Require().Equal(codes.Unauthenticated, st.Code())
+
+	var httpErr httpcli.ErrorResponse
+	s.Require().ErrorAs(err, &httpErr)
+	s.Require().Equal(http.StatusUnauthorized, httpErr.StatusCode)
 
 	time.Sleep(1 * time.Second) // wait for go SaveAuditAsync()
 }
@@ -164,11 +166,13 @@ func (s *AuthTestSuite) TestLoginWrongPassword() {
 			Email:    "a@a.ru",
 			Password: "WrongPassword",
 		}).
+		StatusCodeToError().
 		DoWithoutResponse(s.T().Context())
 	s.Require().Error(err)
-	st, ok := status.FromError(err)
-	s.Require().True(ok)
-	s.Require().Equal(codes.Unauthenticated, st.Code())
+
+	var httpErr httpcli.ErrorResponse
+	s.Require().ErrorAs(err, &httpErr)
+	s.Require().Equal(http.StatusUnauthorized, httpErr.StatusCode)
 
 	time.Sleep(1 * time.Second) // wait for go SaveAuditAsync()
 }
@@ -204,11 +208,13 @@ func (s *AuthTestSuite) TestOauthLogin_UnknownClient() {
 			ClientName: s.oauthClientName + fake.It[string](),
 		}).
 		JsonResponseBody(&response).
+		StatusCodeToError().
 		DoWithoutResponse(s.T().Context())
 	s.Require().Error(err)
-	st, ok := status.FromError(err)
-	s.Require().True(ok)
-	s.Require().Equal(codes.Unauthenticated, st.Code())
+
+	var httpErr httpcli.ErrorResponse
+	s.Require().ErrorAs(err, &httpErr)
+	s.Require().Equal(http.StatusUnauthorized, httpErr.StatusCode)
 }
 
 func (s *AuthTestSuite) Test_Logout_HappyPath() {
@@ -297,14 +303,18 @@ func (s *AuthTestSuite) TestBruteForceLogin() {
 					Password: fmt.Sprintf("password %s", strconv.Itoa(index)),
 				}).
 				JsonResponseBody(&response).
+				StatusCodeToError().
 				DoWithoutResponse(ctx)
 			s.Require().Error(err)
 
-			switch status.Code(err) { // nolint:exhaustive
-			case codes.ResourceExhausted:
+			var httpErr httpcli.ErrorResponse
+			s.Require().ErrorAs(err, &httpErr)
+
+			switch httpErr.StatusCode { // nolint:exhaustive
+			case http.StatusTooManyRequests:
 				tooManyRequestsErrorCount.Add(1)
 				s.Require().True(time.Since(start) < time.Second)
-			case codes.Unauthenticated:
+			case http.StatusUnauthorized:
 				unauthorizedErrorCount.Add(1)
 				s.Require().True(time.Since(start) > time.Second)
 			default:

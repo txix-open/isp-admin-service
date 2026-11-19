@@ -26,6 +26,19 @@ var (
 	ErrUnknownClient        = errors.New("unknown client")
 )
 
+var (
+	UnknownAuditEventErrorCode  = 1
+	ErrOauthAuthorizationCode   = 2
+	ErrUnauthenticatedCode      = 3
+	ErrTooManyLoginRequestsCode = 4
+	ErrOauthIsMissedCode        = 5
+	ErrAlreadyExistsCode        = 6
+	ErrNotFoundCode             = 7
+	ErrUnknownClientCode        = 8
+	ErrInvalidCode              = 9
+	ErrInvalidPasswordCode      = 10
+)
+
 type UnknownAuditEventError struct {
 	Event string
 }

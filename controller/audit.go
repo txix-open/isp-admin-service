@@ -2,12 +2,12 @@ package controller
 
 import (
 	"context"
+	"net/http"
 
 	"isp-admin-service/domain"
 
 	"github.com/txix-open/isp-kit/errors"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"github.com/txix-open/isp-kit/http/apierrors"
 )
 
 type AuditService interface {
@@ -80,7 +80,7 @@ func (c Audit) SetEvents(ctx context.Context, req []domain.SetAuditEvent) error 
 	err := c.service.SetEvents(ctx, req)
 	switch {
 	case errors.As(err, &domain.UnknownAuditEventError{}):
-		return status.Error(codes.InvalidArgument, err.Error())
+		return apierrors.New(http.StatusBadRequest, domain.UnknownAuditEventErrorCode, err.Error(), err)
 	default:
 		return err
 	}

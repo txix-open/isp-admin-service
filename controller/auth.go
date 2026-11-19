@@ -2,16 +2,15 @@ package controller
 
 import (
 	"context"
+	"net/http"
 	"strconv"
 
+	"isp-admin-service/auth"
 	"isp-admin-service/domain"
 
 	"github.com/txix-open/isp-kit/errors"
-	"github.com/txix-open/isp-kit/grpc"
+	"github.com/txix-open/isp-kit/http/apierrors"
 	"github.com/txix-open/isp-kit/log"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
 )
 
 type authService interface {
@@ -43,8 +42,8 @@ func NewAuth(authService authService, logger log.Logger) Auth {
 // @Failure 400 {object} domain.GrpcError "Невалидный токен"
 // @Failure 500 {object} domain.GrpcError
 // @Router /auth/logout [POST]
-func (a Auth) Logout(ctx context.Context, authData grpc.AuthData) error {
-	adminId, err := getAdminId(authData)
+func (a Auth) Logout(ctx context.Context, r *http.Request) error {
+	adminId, err := getAdminId(r)
 	if err != nil {
 		return err
 	}
@@ -69,8 +68,8 @@ func (a Auth) Logout(ctx context.Context, authData grpc.AuthData) error {
 // @Failure 400 {object} domain.GrpcError "Невалидный токен"
 // @Failure 500 {object} domain.GrpcError
 // @Router /auth/logout_with_reason [POST]
-func (a Auth) LogoutWithReason(ctx context.Context, authData grpc.AuthData, logoutRequest domain.LogoutRequest) error {
-	adminId, err := getAdminId(authData)
+func (a Auth) LogoutWithReason(ctx context.Context, logoutRequest domain.LogoutRequest, r *http.Request) error {
+	adminId, err := getAdminId(r)
 	if err != nil {
 		return err
 	}
@@ -100,12 +99,12 @@ func (a Auth) Login(ctx context.Context, authRequest domain.LoginRequest) (*doma
 
 	switch {
 	case errors.Is(err, domain.ErrOauthAuthorization):
-		return nil, status.Error(codes.InvalidArgument, "plain auth is not available")
+		return nil, apierrors.New(http.StatusBadRequest, domain.ErrOauthAuthorizationCode, err.Error(), err)
 	case errors.Is(err, domain.ErrUnauthenticated):
 		a.logger.Error(ctx, err.Error())
-		return nil, status.Error(codes.Unauthenticated, "invalid credential")
+		return nil, apierrors.New(http.StatusUnauthorized, domain.ErrUnauthenticatedCode, err.Error(), err)
 	case errors.Is(err, domain.ErrTooManyLoginRequests):
-		return nil, status.Error(codes.ResourceExhausted, "too many requests")
+		return nil, apierrors.New(http.StatusTooManyRequests, domain.ErrTooManyLoginRequestsCode, err.Error(), err)
 	case err != nil:
 		return nil, errors.WithMessage(err, "login")
 	default:
@@ -130,9 +129,9 @@ func (a Auth) LoginWithOauth(ctx context.Context, request domain.LoginOauthReque
 
 	switch {
 	case errors.Is(err, domain.ErrOauthIsMissed):
-		return nil, status.Error(codes.FailedPrecondition, "oauth is not configured")
+		return nil, apierrors.New(http.StatusBadRequest, domain.ErrOauthIsMissedCode, err.Error(), err)
 	case errors.Is(err, domain.ErrUnauthenticated):
-		return nil, status.Error(codes.Unauthenticated, "invalid code")
+		return nil, apierrors.New(http.StatusUnauthorized, domain.ErrUnauthenticatedCode, err.Error(), err)
 	case err != nil:
 		return nil, errors.WithMessage(err, "login with oauth")
 	default:
@@ -140,15 +139,15 @@ func (a Auth) LoginWithOauth(ctx context.Context, request domain.LoginOauthReque
 	}
 }
 
-func getAdminId(authData grpc.AuthData) (int64, error) {
-	token, err := grpc.StringFromMd(domain.AdminAuthIdHeader, metadata.MD(authData))
+func getAdminId(r *http.Request) (int64, error) {
+	token, err := auth.StringFromHeader(domain.AdminAuthIdHeader, r.Header)
 	if err != nil {
-		return 0, status.Error(codes.InvalidArgument, err.Error())
+		return 0, apierrors.NewBusinessError(http.StatusBadRequest, err.Error(), err)
 	}
 
 	adminId, err := strconv.Atoi(token)
 	if err != nil {
-		return 0, status.Error(codes.InvalidArgument, "admin id is not a number")
+		return 0, apierrors.NewBusinessError(http.StatusBadRequest, err.Error(), err)
 	}
 
 	return int64(adminId), nil

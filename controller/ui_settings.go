@@ -3,10 +3,10 @@ package controller
 import (
 	"context"
 	"isp-admin-service/domain"
+	"net/http"
 
 	"github.com/txix-open/isp-kit/errors"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"github.com/txix-open/isp-kit/http/apierrors"
 )
 
 type UiSettingsService interface {
@@ -39,7 +39,7 @@ func (c UiSettings) OauthSettings(ctx context.Context, req domain.ClientNameRequ
 	resp, err := c.service.OauthSettings(ctx, req)
 	switch {
 	case errors.Is(err, domain.ErrUnknownClient):
-		return nil, status.Error(codes.Unauthenticated, "invalid client name")
+		return nil, apierrors.New(http.StatusUnauthorized, domain.ErrUnknownClientCode, err.Error(), err)
 	case err != nil:
 		return nil, err
 	default:

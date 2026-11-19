@@ -2,11 +2,12 @@ package tests_test
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
 	"strconv"
 	"testing"
 	"time"
 
-	"github.com/txix-open/isp-kit/grpc/apierrors"
 	"golang.org/x/crypto/bcrypt"
 
 	"isp-admin-service/assembly"
@@ -23,8 +24,6 @@ import (
 	"github.com/txix-open/isp-kit/test"
 	"github.com/txix-open/isp-kit/test/dbt"
 	"github.com/txix-open/isp-kit/test/httpt"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type tokenService interface {
@@ -89,7 +88,7 @@ func (s *UserTestSuite) TestGetProfileHappyPath() {
 	})
 
 	response := domain.AdminUserShort{}
-	err := s.httpCli.Post("admin/user/get_profile").
+	err := s.apiCli.Post("admin/user/get_profile").
 		JsonResponseBody(&response).
 		Header(domain.AdminAuthIdHeader, strconv.Itoa(int(id))).
 		DoWithoutResponse(s.T().Context())
@@ -116,13 +115,14 @@ func (s *UserTestSuite) TestGetProfileNotFound() {
 		Password:  "password",
 	})
 
-	err := s.httpCli.Post("admin/user/get_profile").
+	err := s.apiCli.Post("admin/user/get_profile").
 		Header(domain.AdminAuthIdHeader, strconv.Itoa(int(id+1))).
+		StatusCodeToError().
 		DoWithoutResponse(s.T().Context())
 	s.Require().Error(err)
-	st, ok := status.FromError(err)
-	s.Require().True(ok)
-	s.Require().Equal(codes.NotFound, st.Code())
+	var httpErr httpcli.ErrorResponse
+	s.Require().ErrorAs(err, &httpErr)
+	s.Require().Equal(http.StatusNotFound, httpErr.StatusCode)
 }
 
 func (s *UserTestSuite) TestGetProfileOauth() {
@@ -144,7 +144,7 @@ func (s *UserTestSuite) TestGetProfileOauth() {
 	})
 
 	response := domain.AdminUserShort{}
-	err := s.httpCli.
+	err := s.apiCli.
 		Post("admin/user/get_profile").
 		Header(domain.AdminAuthIdHeader, strconv.Itoa(int(id))).
 		JsonResponseBody(&response).
@@ -183,7 +183,7 @@ func (s *UserTestSuite) TestGetUsers() {
 	email := "a1@"
 
 	response := domain.UsersResponse{}
-	err := s.httpCli.Post("admin/user/get_users").
+	err := s.apiCli.Post("admin/user/get_users").
 		JsonRequestBody(domain.UsersPageRequest{
 			LimitOffsetParams: domain.LimitOffsetParams{
 				Limit:  5,
@@ -211,7 +211,7 @@ func (s *UserTestSuite) TestGetUsers() {
 	s.Require().EqualValues(roles, response.Items[1].Roles)
 
 	email = "test@mail.ru"
-	err = s.httpCli.Post("admin/user/get_users").
+	err = s.apiCli.Post("admin/user/get_users").
 		JsonRequestBody(domain.UsersPageRequest{
 			LimitOffsetParams: domain.LimitOffsetParams{
 				Limit:  10,
@@ -250,7 +250,10 @@ func (s *UserTestSuite) TestAllGetUsers() {
 	InsertUserRole(s.db, entity.UserRole{RoleId: int(roleId2), UserId: int(userId2)})
 
 	response := domain.UsersResponse{}
-	err := s.httpCli.Post("admin/user/get_all_users").JsonResponseBody(&response).DoWithoutResponse(s.T().Context())
+	err := s.apiCli.Post("admin/user/get_all_users").
+		JsonResponseBody(&response).
+		StatusCodeToError().
+		DoWithoutResponse(s.T().Context())
 	s.Require().NoError(err)
 
 	s.Require().Len(response.Items, 7)
@@ -295,7 +298,7 @@ func (s *UserTestSuite) TestGetUsersFilterByLastActiveAt() {
 	})
 
 	response := domain.UsersResponse{}
-	err = s.httpCli.Post("admin/user/get_users").
+	err = s.apiCli.Post("admin/user/get_users").
 		JsonRequestBody(domain.UsersPageRequest{
 			LimitOffsetParams: domain.LimitOffsetParams{
 				Limit:  5,
@@ -331,7 +334,7 @@ func (s *UserTestSuite) TestGetUsersSortByName() {
 	userIdAL := InsertUser(s.db, entity.User{Email: "a1@d.ru", FirstName: "А", LastName: "Л", FullName: "Л А"})
 
 	response := domain.UsersResponse{}
-	err := s.httpCli.Post("admin/user/get_users").
+	err := s.apiCli.Post("admin/user/get_users").
 		JsonRequestBody(domain.UsersPageRequest{
 			LimitOffsetParams: domain.LimitOffsetParams{
 				Limit:  10,
@@ -363,7 +366,7 @@ func (s *UserTestSuite) TestCreateUserHappyPath() {
 	s.db.Must().SelectRow(&preCount, "select count(*) from users")
 
 	response := entity.User{}
-	err := s.httpCli.
+	err := s.apiCli.
 		Post("admin/user/create_user").
 		Header(domain.AdminAuthIdHeader, strconv.Itoa(int(admin))).
 		JsonRequestBody(domain.CreateUserRequest{
@@ -391,7 +394,7 @@ func (s *UserTestSuite) TestCreateUserWithSameEmailOauthHappyPath() {
 	s.db.Must().SelectRow(&preCount, "select count(*) from users")
 
 	response := entity.User{}
-	err := s.httpCli.
+	err := s.apiCli.
 		Post("admin/user/create_user").
 		Header(domain.AdminAuthIdHeader, strconv.Itoa(int(admin))).
 		JsonRequestBody(domain.CreateUserRequest{
@@ -414,7 +417,7 @@ func (s *UserTestSuite) TestCreateUserWithSameEmailOauthHappyPath() {
 func (s *UserTestSuite) TestCreateUserAlreadyExist() {
 	id := InsertUser(s.db, entity.User{Email: "exists@a.ru"})
 
-	err := s.httpCli.
+	err := s.apiCli.
 		Post("admin/user/create_user").
 		Header(domain.AdminAuthIdHeader, strconv.Itoa(int(id))).
 		JsonRequestBody(domain.CreateUserRequest{
@@ -423,11 +426,13 @@ func (s *UserTestSuite) TestCreateUserAlreadyExist() {
 			Email:     "exists@a.ru",
 			Password:  "password",
 		}).
+		StatusCodeToError().
 		DoWithoutResponse(s.T().Context())
 	s.Require().Error(err)
-	st, ok := status.FromError(err)
-	s.Require().True(ok)
-	s.Require().Equal(codes.AlreadyExists, st.Code())
+
+	var httpErr httpcli.ErrorResponse
+	s.Require().ErrorAs(err, &httpErr)
+	s.Require().Equal(http.StatusConflict, httpErr.StatusCode)
 }
 
 func (s *AuthTestSuite) TestUpdateUserHappyPath() {
@@ -439,8 +444,7 @@ func (s *AuthTestSuite) TestUpdateUserHappyPath() {
 		Email:     "update@a.ru",
 	}
 	response := domain.User{}
-	err := s.httpCli.
-		Post("admin/user/update_user").
+	err := s.httpCli.Post("admin/user/update_user").
 		Header(domain.AdminAuthIdHeader, strconv.Itoa(int(id))).
 		JsonRequestBody(req).
 		JsonResponseBody(&response).
@@ -466,8 +470,7 @@ func (s *AuthTestSuite) TestUpdateOauthUserHappyPath() {
 		Email:     "oauth@a.ru",
 	}
 	response := domain.User{}
-	err := s.httpCli.
-		Post("admin/user/update_user").
+	err := s.httpCli.Post("admin/user/update_user").
 		Header(domain.AdminAuthIdHeader, strconv.Itoa(int(id))).
 		JsonRequestBody(req).
 		JsonResponseBody(&response).
@@ -494,15 +497,16 @@ func (s *AuthTestSuite) TestUpdateUserAlreadyExist() {
 		LastName:  "surname",
 		Email:     "a_exists@a.ru",
 	}
-	err := s.httpCli.
-		Post("admin/user/update_user").
+	err := s.httpCli.Post("admin/user/update_user").
 		Header(domain.AdminAuthIdHeader, strconv.Itoa(int(admin))).
 		JsonRequestBody(req).
+		StatusCodeToError().
 		DoWithoutResponse(s.T().Context())
 	s.Require().Error(err)
-	st, ok := status.FromError(err)
-	s.Require().True(ok)
-	s.Require().Equal(codes.AlreadyExists, st.Code())
+
+	var httpErr httpcli.ErrorResponse
+	s.Require().ErrorAs(err, &httpErr)
+	s.Require().Equal(http.StatusConflict, httpErr.StatusCode)
 }
 
 func (s *AuthTestSuite) TestUpdateUserWithOauthAlreadyExist() {
@@ -517,15 +521,16 @@ func (s *AuthTestSuite) TestUpdateUserWithOauthAlreadyExist() {
 		LastName:  "surname",
 		Email:     "a_exists@a.ru",
 	}
-	err := s.httpCli.
-		Post("admin/user/update_user").
+	err := s.httpCli.Post("admin/user/update_user").
 		Header(domain.AdminAuthIdHeader, strconv.Itoa(int(admin))).
 		JsonRequestBody(req).
+		StatusCodeToError().
 		DoWithoutResponse(s.T().Context())
 	s.Require().Error(err)
-	st, ok := status.FromError(err)
-	s.Require().True(ok)
-	s.Require().Equal(codes.AlreadyExists, st.Code())
+
+	var httpErr httpcli.ErrorResponse
+	s.Require().ErrorAs(err, &httpErr)
+	s.Require().Equal(http.StatusConflict, httpErr.StatusCode)
 }
 
 func (s *UserTestSuite) TestDeleteUsers() {
@@ -535,7 +540,7 @@ func (s *UserTestSuite) TestDeleteUsers() {
 	InsertUser(s.db, entity.User{Email: "a_del@c.ru"})
 
 	response := domain.DeleteResponse{}
-	err := s.httpCli.
+	err := s.apiCli.
 		Post("admin/user/delete_user").
 		Header(domain.AdminAuthIdHeader, strconv.Itoa(int(admin))).
 		JsonRequestBody(domain.IdentitiesRequest{Ids: []int64{3, 4}}).
@@ -566,8 +571,9 @@ func (s *UserTestSuite) TestBlockUser() {
 		UpdatedAt: time.Now(),
 	})
 
-	err := s.httpCli.Post("admin/user/block_user").
+	err := s.apiCli.Post("admin/user/block_user").
 		Header(domain.AdminAuthIdHeader, strconv.Itoa(int(id))).
+		StatusCodeToError().
 		JsonRequestBody(domain.IdRequest{UserId: int(id)}).
 		DoWithoutResponse(s.T().Context())
 	s.Require().NoError(err)
@@ -597,19 +603,30 @@ func (s *UserTestSuite) TestChangePasswordUser() {
 
 	// check for err when invalid data
 	invalidReq := domain.ChangePasswordRequest{OldPassword: "invalid", NewPassword: "new_password"}
-	err := s.httpCli.Post("admin/user/change_password").
+	err := s.apiCli.Post("admin/user/change_password").
 		Header(domain.AdminAuthIdHeader, strconv.Itoa(int(adminId))).
 		JsonRequestBody(invalidReq).
+		StatusCodeToError().
 		DoWithoutResponse(s.T().Context())
 	s.Require().Error(err)
-	err = apierrors.FromError(err)
-	s.Require().Contains(err.Error(), strconv.Itoa(domain.ErrCodeInvalidPassword))
+
+	var httpErr httpcli.ErrorResponse
+	s.Require().ErrorAs(err, &httpErr)
+	s.Require().Equal(http.StatusBadRequest, httpErr.StatusCode)
+
+	var body struct {
+		ErrorCode    int    `json:"errorCode"`
+		ErrorMessage string `json:"errorMessage"`
+	}
+	s.Require().NoError(json.Unmarshal(httpErr.Body, &body))
+	s.Require().Equal(domain.ErrCodeInvalidPassword, body.ErrorCode)
 
 	// change password
 	changePswReq := domain.ChangePasswordRequest{OldPassword: "password", NewPassword: "new_password"}
-	err = s.httpCli.Post("admin/user/change_password").
+	err = s.apiCli.Post("admin/user/change_password").
 		Header(domain.AdminAuthIdHeader, strconv.Itoa(int(adminId))).
 		JsonRequestBody(changePswReq).
+		StatusCodeToError().
 		DoWithoutResponse(s.T().Context())
 
 	s.Require().NoError(err)

@@ -6,7 +6,7 @@ import (
 	"isp-admin-service/domain"
 
 	"github.com/txix-open/isp-kit/errors"
-	"github.com/txix-open/isp-kit/grpc/apierrors"
+	"github.com/txix-open/isp-kit/http/apierrors"
 )
 
 type SecureService interface {

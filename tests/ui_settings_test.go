@@ -4,6 +4,7 @@ import (
 	"isp-admin-service/assembly"
 	"isp-admin-service/conf"
 	"isp-admin-service/domain"
+	"net/http"
 	"net/url"
 	"testing"
 
@@ -12,8 +13,6 @@ import (
 	"github.com/txix-open/isp-kit/test"
 	"github.com/txix-open/isp-kit/test/fake"
 	"github.com/txix-open/isp-kit/test/httpt"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type UiSettingsSuite struct {
@@ -97,9 +96,11 @@ func (s *UiSettingsSuite) Test_UnknownClient() {
 		JsonRequestBody(domain.ClientNameRequest{
 			ClientName: s.oauthClientSetting.ClientName + fake.It[string](),
 		}).
+		StatusCodeToError().
 		DoWithoutResponse(s.T().Context())
 	s.Require().Error(err)
-	st, ok := status.FromError(err)
-	s.Require().True(ok)
-	s.Require().Equal(codes.Unauthenticated, st.Code())
+
+	var httpErr httpcli.ErrorResponse
+	s.Require().ErrorAs(err, &httpErr)
+	s.Require().Equal(http.StatusUnauthorized, httpErr.StatusCode)
 }

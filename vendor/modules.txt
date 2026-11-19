@@ -237,9 +237,6 @@ github.com/txix-open/isp-kit/dbrx
 github.com/txix-open/isp-kit/dbx
 github.com/txix-open/isp-kit/dbx/migration
 github.com/txix-open/isp-kit/errors
-github.com/txix-open/isp-kit/grpc
-github.com/txix-open/isp-kit/grpc/apierrors
-github.com/txix-open/isp-kit/grpc/isp
 github.com/txix-open/isp-kit/healthcheck
 github.com/txix-open/isp-kit/http
 github.com/txix-open/isp-kit/http/apierrors

@@ -1,6 +1,7 @@
 package tests_test
 
 import (
+	"net/http"
 	"testing"
 	"time"
 
@@ -16,8 +17,6 @@ import (
 	"github.com/txix-open/isp-kit/test"
 	"github.com/txix-open/isp-kit/test/dbt"
 	"github.com/txix-open/isp-kit/test/httpt"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 func TestAuditSuite(t *testing.T) {
@@ -173,11 +172,14 @@ func (s *AuditSuite) Test_SetEvents_InvalidEvent() {
 			{Event: entity.EventUserChanged, Enabled: true},
 			{Event: "новый#2", Enabled: false},
 		}).
+		StatusCodeToError().
 		DoWithoutResponse(s.T().Context())
 	s.Require().Error(err)
-	status, isStatus := status.FromError(err)
-	s.Require().True(isStatus)
-	s.Require().Equal(codes.InvalidArgument, status.Code())
+
+	var httpErr httpcli.ErrorResponse
+	s.Require().ErrorAs(err, &httpErr)
+	s.Require().Equal(http.StatusBadRequest, httpErr.StatusCode) // не уверен тут какой код проверять? Статус или внутренний? Коммент чтобы не забыть
+
 }
 
 func (s *AuditSuite) Test_All_Logs() {
