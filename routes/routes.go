@@ -7,7 +7,7 @@ import (
 
 	"github.com/txix-open/isp-kit/cluster"
 	"github.com/txix-open/isp-kit/common_endpoints"
-	"github.com/txix-open/isp-kit/http/endpoint"
+	httpEndpoint "github.com/txix-open/isp-kit/http/endpoint"
 	"github.com/txix-open/isp-kit/http/router"
 )
 
@@ -31,7 +31,7 @@ func EndpointDescriptors() []cluster.EndpointDescriptor {
 	)
 }
 
-func Handler(wrapper endpoint.Wrapper, c Controllers) *router.Router { // nolint:ireturn
+func Handler(wrapper httpEndpoint.Wrapper, c Controllers) *router.Router { // nolint:ireturn
 	muxer := router.New()
 	for _, descriptor := range endpointDescriptors(c) {
 		muxer.Handler(descriptor.HttpMethod, "/"+descriptor.Path, wrapper.Endpoint(descriptor.Handler))

@@ -1,19 +1,19 @@
 package domain
 
 type AuditDownloadRequest struct {
-	LimitOffestParams
+	LimitOffsetParams
 
 	Order *OrderParams
 	Query *AuditQuery
 }
 type SessionDownloadRequest struct {
-	LimitOffestParams
+	LimitOffsetParams
 
 	Order *OrderParams
 	Query *SessionQuery
 }
 type UsersDownloadRequest struct {
-	LimitOffestParams
+	LimitOffsetParams
 
 	Order *OrderParams
 	Query *UserQuery

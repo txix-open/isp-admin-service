@@ -13,7 +13,7 @@ type Session struct {
 }
 
 type SessionPageRequest struct {
-	LimitOffestParams
+	LimitOffsetParams
 
 	Order *OrderParams  // Параметры сортировки
 	Query *SessionQuery // Параметры выборки

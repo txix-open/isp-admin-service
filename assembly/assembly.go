@@ -128,7 +128,7 @@ func (a *Assembly) Closers() []app.Closer {
 	return []app.Closer{
 		a.boot.ClusterCli,
 		app.CloserFunc(func() error {
-			a.server.Shutdown(context.Background())
+			_ = a.server.Shutdown(context.Background())
 			return nil
 		}),
 		app.CloserFunc(func() error {

@@ -12,11 +12,10 @@ import (
 
 	"github.com/stretchr/testify/suite"
 	"github.com/txix-open/isp-kit/dbx"
-	"github.com/txix-open/isp-kit/grpc/client"
 	"github.com/txix-open/isp-kit/http/httpcli"
 	"github.com/txix-open/isp-kit/test"
 	"github.com/txix-open/isp-kit/test/dbt"
-	"github.com/txix-open/isp-kit/test/grpct"
+	"github.com/txix-open/isp-kit/test/httpt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -31,7 +30,7 @@ type AuditSuite struct {
 
 	test    *test.Test
 	db      *dbt.TestDb
-	grpcCli *client.Client
+	httpCli *httpcli.Client
 }
 
 func (s *AuditSuite) SetupTest() {
@@ -70,25 +69,25 @@ func (s *AuditSuite) SetupTest() {
 			AuditTTl: conf.AuditTTlSetting{},
 		},
 	}
-	cfg, err := assembly.NewLocator(testInstance.Logger(), httpcli.New(), s.db).
+	cfg, err := assembly.NewLocator(testInstance.Logger(), httpcli.New(), httpcli.New(), s.db).
 		Config(s.T().Context(), remote, time.Minute)
 	s.Require().NoError(err)
 	s.insertAuditLogs()
 
-	server, apiCli := grpct.TestServer(testInstance, cfg.Handler)
-	s.grpcCli = apiCli
+	server, cli := httpt.TestServer(s.test, cfg.Handler)
+	s.httpCli = cli
 
 	testInstance.T().Cleanup(func() {
-		server.Shutdown()
+		server.Close()
 	})
 }
 
 func (s *AuditSuite) Test_Events_DefaultEvents() {
 	response := make([]domain.AuditEvent, 0)
-	err := s.grpcCli.
-		Invoke("admin/log/events").
+	err := s.httpCli.
+		Post("admin/log/events").
 		JsonResponseBody(&response).
-		Do(s.T().Context())
+		DoWithoutResponse(s.T().Context())
 	s.Require().NoError(err)
 
 	expectedEventList := map[string]string{
@@ -123,10 +122,10 @@ func (s *AuditSuite) Test_Events_SortEvents() {
 	s.Require().NoError(err)
 
 	response := make([]domain.AuditEvent, 0)
-	err = s.grpcCli.
-		Invoke("admin/log/events").
+	err = s.httpCli.
+		Post("admin/log/events").
 		JsonResponseBody(&response).
-		Do(s.T().Context())
+		DoWithoutResponse(s.T().Context())
 	s.Require().NoError(err)
 
 	expectedSort := []bool{
@@ -139,13 +138,13 @@ func (s *AuditSuite) Test_Events_SortEvents() {
 }
 
 func (s *AuditSuite) Test_SetEvents_HappyPath() {
-	err := s.grpcCli.
-		Invoke("admin/log/set_events").
+	err := s.httpCli.
+		Post("admin/log/set_events").
 		JsonRequestBody([]domain.SetAuditEvent{
 			{Event: entity.EventUserChanged, Enabled: true},
 			{Event: entity.EventRoleChanged, Enabled: false},
 		}).
-		Do(s.T().Context())
+		DoWithoutResponse(s.T().Context())
 	s.Require().NoError(err)
 
 	expectedEventList := map[string]bool{
@@ -169,12 +168,12 @@ func (s *AuditSuite) Test_SetEvents_HappyPath() {
 }
 
 func (s *AuditSuite) Test_SetEvents_InvalidEvent() {
-	err := s.grpcCli.Invoke("admin/log/set_events").
+	err := s.httpCli.Post("admin/log/set_events").
 		JsonRequestBody([]domain.SetAuditEvent{
 			{Event: entity.EventUserChanged, Enabled: true},
 			{Event: "новый#2", Enabled: false},
 		}).
-		Do(s.T().Context())
+		DoWithoutResponse(s.T().Context())
 	s.Require().Error(err)
 	status, isStatus := status.FromError(err)
 	s.Require().True(isStatus)
@@ -183,8 +182,10 @@ func (s *AuditSuite) Test_SetEvents_InvalidEvent() {
 
 func (s *AuditSuite) Test_All_Logs() {
 	request := domain.AuditPageRequest{
-		Limit:  3,
-		Offset: 5,
+		LimitOffsetParams: domain.LimitOffsetParams{
+			Limit:  3,
+			Offset: 5,
+		},
 		Order: &domain.OrderParams{
 			Field: "user_id",
 			Type:  "desc",
@@ -192,11 +193,11 @@ func (s *AuditSuite) Test_All_Logs() {
 	}
 
 	var response *domain.AuditResponse
-	err := s.grpcCli.
-		Invoke("admin/log/all").
+	err := s.httpCli.
+		Post("admin/log/all").
 		JsonRequestBody(request).
 		JsonResponseBody(&response).
-		Do(s.T().Context())
+		DoWithoutResponse(s.T().Context())
 	s.Require().NoError(err)
 
 	s.Require().Len(response.Items, 3)
@@ -210,11 +211,11 @@ func (s *AuditSuite) Test_All_Logs() {
 	request.Limit = 10
 	request.Offset = 0
 
-	err = s.grpcCli.
-		Invoke("admin/log/all").
+	err = s.httpCli.
+		Post("admin/log/all").
 		JsonRequestBody(request).
 		JsonResponseBody(&response).
-		Do(s.T().Context())
+		DoWithoutResponse(s.T().Context())
 	s.Require().NoError(err)
 
 	s.Require().Len(response.Items, 6)

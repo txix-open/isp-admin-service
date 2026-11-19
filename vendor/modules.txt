@@ -239,9 +239,6 @@ github.com/txix-open/isp-kit/dbx/migration
 github.com/txix-open/isp-kit/errors
 github.com/txix-open/isp-kit/grpc
 github.com/txix-open/isp-kit/grpc/apierrors
-github.com/txix-open/isp-kit/grpc/client
-github.com/txix-open/isp-kit/grpc/client/request
-github.com/txix-open/isp-kit/grpc/endpoint
 github.com/txix-open/isp-kit/grpc/isp
 github.com/txix-open/isp-kit/healthcheck
 github.com/txix-open/isp-kit/http
@@ -262,15 +259,11 @@ github.com/txix-open/isp-kit/log/logutil
 github.com/txix-open/isp-kit/metrics
 github.com/txix-open/isp-kit/metrics/app_metrics
 github.com/txix-open/isp-kit/metrics/bgjob_metrics
-github.com/txix-open/isp-kit/metrics/grpc_metrics
 github.com/txix-open/isp-kit/metrics/http_metrics
 github.com/txix-open/isp-kit/metrics/pgx_metrics
 github.com/txix-open/isp-kit/metrics/sql_metrics
 github.com/txix-open/isp-kit/observability/sentry
 github.com/txix-open/isp-kit/observability/tracing
-github.com/txix-open/isp-kit/observability/tracing/grpc
-github.com/txix-open/isp-kit/observability/tracing/grpc/client_tracing
-github.com/txix-open/isp-kit/observability/tracing/grpc/server_tracing
 github.com/txix-open/isp-kit/observability/tracing/http/client_tracing
 github.com/txix-open/isp-kit/observability/tracing/http/semconvutil
 github.com/txix-open/isp-kit/observability/tracing/http/server_tracing
@@ -283,7 +276,7 @@ github.com/txix-open/isp-kit/shutdown
 github.com/txix-open/isp-kit/test
 github.com/txix-open/isp-kit/test/dbt
 github.com/txix-open/isp-kit/test/fake
-github.com/txix-open/isp-kit/test/grpct
+github.com/txix-open/isp-kit/test/httpt
 github.com/txix-open/isp-kit/test/rct
 github.com/txix-open/isp-kit/validator
 # github.com/txix-open/jsonschema v1.3.0
@@ -507,7 +500,6 @@ google.golang.org/grpc/metadata
 google.golang.org/grpc/peer
 google.golang.org/grpc/resolver
 google.golang.org/grpc/resolver/dns
-google.golang.org/grpc/resolver/manual
 google.golang.org/grpc/serviceconfig
 google.golang.org/grpc/stats
 google.golang.org/grpc/status

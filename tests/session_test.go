@@ -14,11 +14,10 @@ import (
 	"github.com/stretchr/testify/suite"
 	"github.com/txix-open/isp-kit/bgjobx"
 	"github.com/txix-open/isp-kit/dbx"
-	"github.com/txix-open/isp-kit/grpc/client"
 	"github.com/txix-open/isp-kit/http/httpcli"
 	"github.com/txix-open/isp-kit/test"
 	"github.com/txix-open/isp-kit/test/dbt"
-	"github.com/txix-open/isp-kit/test/grpct"
+	"github.com/txix-open/isp-kit/test/httpt"
 )
 
 func TestSessionSuite(t *testing.T) {
@@ -32,7 +31,7 @@ type SessionSuite struct {
 	test    *test.Test
 	db      *dbt.TestDb
 	config  assembly.Config
-	grpcCli *client.Client
+	httpCli *httpcli.Client
 }
 
 func (s *SessionSuite) SetupTest() {
@@ -71,17 +70,17 @@ func (s *SessionSuite) SetupTest() {
 			AuditTTl: conf.AuditTTlSetting{},
 		},
 	}
-	config, err := assembly.NewLocator(testInstance.Logger(), httpcli.New(), s.db).
+	config, err := assembly.NewLocator(testInstance.Logger(), httpcli.New(), nil, s.db).
 		Config(s.T().Context(), remote, 500*time.Millisecond)
 	s.Require().NoError(err)
 
 	s.config = config
 
-	server, apiCli := grpct.TestServer(testInstance, s.config.Handler)
-	s.grpcCli = apiCli
+	server, cli := httpt.TestServer(s.test, config.Handler)
+	s.httpCli = cli
 
 	testInstance.T().Cleanup(func() {
-		server.Shutdown()
+		server.Close()
 	})
 }
 
@@ -117,16 +116,18 @@ func (s *SessionSuite) Test_All_Session() {
 
 	// Дефолт сортировка, лимит и оффсет
 	request := domain.SessionPageRequest{
-		Limit:  5,
-		Offset: 1,
+		LimitOffsetParams: domain.LimitOffsetParams{
+			Limit:  5,
+			Offset: 1,
+		},
 	}
 
 	var response *domain.SessionResponse
-	err := s.grpcCli.
-		Invoke("admin/session/all").
+	err := s.httpCli.
+		Post("admin/session/all").
 		JsonRequestBody(request).
 		JsonResponseBody(&response).
-		Do(s.T().Context())
+		DoWithoutResponse(s.T().Context())
 	s.Require().NoError(err)
 
 	s.Require().Len(response.Items, 2)
@@ -142,11 +143,11 @@ func (s *SessionSuite) Test_All_Session() {
 			To:   timeNow.Add(24 * time.Hour),
 		},
 	}
-	err = s.grpcCli.
-		Invoke("admin/session/all").
+	err = s.httpCli.
+		Post("admin/session/all").
 		JsonRequestBody(request).
 		JsonResponseBody(&response).
-		Do(s.T().Context())
+		DoWithoutResponse(s.T().Context())
 	s.Require().NoError(err)
 
 	s.Require().Len(response.Items, 2)
@@ -161,11 +162,11 @@ func (s *SessionSuite) Test_All_Session() {
 		Type:  "asc",
 	}
 
-	err = s.grpcCli.
-		Invoke("admin/session/all").
+	err = s.httpCli.
+		Post("admin/session/all").
 		JsonRequestBody(request).
 		JsonResponseBody(&response).
-		Do(s.T().Context())
+		DoWithoutResponse(s.T().Context())
 	s.Require().NoError(err)
 
 	s.Require().Len(response.Items, 3)
@@ -181,11 +182,11 @@ func (s *SessionSuite) Test_All_Session() {
 		Status: []string{entity.TokenStatusExpired},
 	}
 
-	err = s.grpcCli.
-		Invoke("admin/session/all").
+	err = s.httpCli.
+		Post("admin/session/all").
 		JsonRequestBody(request).
 		JsonResponseBody(&response).
-		Do(s.T().Context())
+		DoWithoutResponse(s.T().Context())
 	s.Require().NoError(err)
 
 	s.Require().Len(response.Items, 1)
@@ -206,8 +207,10 @@ func (s *SessionSuite) Test_All_Session() {
 	}
 
 	request = domain.SessionPageRequest{
-		Limit:  5,
-		Offset: 0,
+		LimitOffsetParams: domain.LimitOffsetParams{
+			Limit:  5,
+			Offset: 0,
+		},
 		Order: &domain.OrderParams{
 			Field: "id",
 			Type:  "desc",
@@ -216,11 +219,11 @@ func (s *SessionSuite) Test_All_Session() {
 			Id: new(2),
 		},
 	}
-	err = s.grpcCli.
-		Invoke("admin/session/all").
+	err = s.httpCli.
+		Post("admin/session/all").
 		JsonRequestBody(request).
 		JsonResponseBody(&response).
-		Do(s.T().Context())
+		DoWithoutResponse(s.T().Context())
 	s.Require().NoError(err)
 
 	s.Require().Len(response.Items, 5)

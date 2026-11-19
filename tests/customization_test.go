@@ -9,10 +9,10 @@ import (
 
 	"github.com/stretchr/testify/suite"
 	"github.com/txix-open/isp-kit/dbx"
-	"github.com/txix-open/isp-kit/grpc/client"
+	"github.com/txix-open/isp-kit/http/httpcli"
 	"github.com/txix-open/isp-kit/test"
 	"github.com/txix-open/isp-kit/test/dbt"
-	"github.com/txix-open/isp-kit/test/grpct"
+	"github.com/txix-open/isp-kit/test/httpt"
 )
 
 func TestCustomizationTestSuite(t *testing.T) {
@@ -25,7 +25,7 @@ type CustomizationTestSuite struct {
 
 	test    *test.Test
 	db      *dbt.TestDb
-	grpcCli *client.Client
+	httpCli *httpcli.Client
 }
 
 func (s *CustomizationTestSuite) SetupTest() {
@@ -40,25 +40,25 @@ func (s *CustomizationTestSuite) SetupTest() {
 		},
 		ExpireSec: 0,
 	}
-	cfg, err := assembly.NewLocator(testInstance.Logger(), nil, s.db).
+	cfg, err := assembly.NewLocator(testInstance.Logger(), nil, nil, s.db).
 		Config(s.T().Context(), remote, time.Minute)
 	s.Require().NoError(err)
 
-	server, apiCli := grpct.TestServer(testInstance, cfg.Handler)
-	s.grpcCli = apiCli
+	server, cli := httpt.TestServer(s.test, cfg.Handler)
+	s.httpCli = cli
 
 	testInstance.T().Cleanup(func() {
-		server.Shutdown()
+		server.Close()
 	})
 }
 
 func (s *CustomizationTestSuite) TestGetDesign() {
 	response := conf.UIDesign{}
-	err := s.grpcCli.
-		Invoke("admin/user/get_design").
+	err := s.httpCli.
+		Post("admin/user/get_design").
 		JsonRequestBody(struct{}{}).
 		JsonResponseBody(&response).
-		Do(s.T().Context())
+		DoWithoutResponse(s.T().Context())
 	s.Require().NoError(err)
 	expected := conf.UIDesign{
 		Name:         "test",

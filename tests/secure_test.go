@@ -12,11 +12,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"github.com/txix-open/isp-kit/dbx"
-	"github.com/txix-open/isp-kit/grpc/client"
 	"github.com/txix-open/isp-kit/http/httpcli"
 	"github.com/txix-open/isp-kit/test"
 	"github.com/txix-open/isp-kit/test/dbt"
-	"github.com/txix-open/isp-kit/test/grpct"
+	"github.com/txix-open/isp-kit/test/httpt"
 )
 
 func TestSecureSuite(t *testing.T) {
@@ -30,7 +29,7 @@ type SecureSuite struct {
 	test    *test.Test
 	require *require.Assertions
 	db      *dbt.TestDb
-	grpcCli *client.Client
+	httpCli *httpcli.Client
 }
 
 func (s *SecureSuite) SetupTest() {
@@ -40,15 +39,15 @@ func (s *SecureSuite) SetupTest() {
 	remote := conf.Remote{
 		ExpireSec: 3600,
 	}
-	cfg, err := assembly.NewLocator(s.test.Logger(), httpCli, s.db).
+	cfg, err := assembly.NewLocator(s.test.Logger(), httpCli, nil, s.db).
 		Config(s.T().Context(), remote, time.Minute)
 	s.Require().NoError(err)
 
-	server, apiCli := grpct.TestServer(s.test, cfg.Handler)
+	server, apiCli := httpt.TestServer(s.test, cfg.Handler)
 	s.test.T().Cleanup(func() {
-		server.Shutdown()
+		server.Close()
 	})
-	s.grpcCli = apiCli
+	s.httpCli = apiCli
 }
 
 func (s *SecureSuite) Test_Authenticate_HappyPath() {
@@ -61,12 +60,12 @@ func (s *SecureSuite) Test_Authenticate_HappyPath() {
 	})
 
 	result := domain.SecureAuthResponse{}
-	err := s.grpcCli.Invoke("admin/secure/authenticate").
+	err := s.httpCli.Post("admin/secure/authenticate").
 		JsonRequestBody(domain.SecureAuthRequest{
 			Token: "happy_path",
 		}).
 		JsonResponseBody(&result).
-		Do(s.T().Context())
+		DoWithoutResponse(s.T().Context())
 	s.require.NoError(err)
 	s.require.Equal(domain.SecureAuthResponse{
 		Authenticated: true,
@@ -85,12 +84,12 @@ func (s *SecureSuite) Test_Authenticate_StatusRevoked() {
 	})
 
 	result := domain.SecureAuthResponse{}
-	err := s.grpcCli.Invoke("admin/secure/authenticate").
+	err := s.httpCli.Post("admin/secure/authenticate").
 		JsonRequestBody(domain.SecureAuthRequest{
 			Token: "revoked",
 		}).
 		JsonResponseBody(&result).
-		Do(s.T().Context())
+		DoWithoutResponse(s.T().Context())
 	s.require.NoError(err)
 	s.require.Equal(domain.SecureAuthResponse{
 		Authenticated: false,
@@ -109,12 +108,12 @@ func (s *SecureSuite) Test_Authenticate_Expired() {
 	})
 
 	result := domain.SecureAuthResponse{}
-	err := s.grpcCli.Invoke("admin/secure/authenticate").
+	err := s.httpCli.Post("admin/secure/authenticate").
 		JsonRequestBody(domain.SecureAuthRequest{
 			Token: "expired",
 		}).
 		JsonResponseBody(&result).
-		Do(s.T().Context())
+		DoWithoutResponse(s.T().Context())
 	s.require.NoError(err)
 	s.require.Equal(domain.SecureAuthResponse{
 		Authenticated: false,
@@ -125,12 +124,12 @@ func (s *SecureSuite) Test_Authenticate_Expired() {
 
 func (s *SecureSuite) Test_Authenticate_NotFound() {
 	result := domain.SecureAuthResponse{}
-	err := s.grpcCli.Invoke("admin/secure/authenticate").
+	err := s.httpCli.Post("admin/secure/authenticate").
 		JsonRequestBody(domain.SecureAuthRequest{
 			Token: "not_found",
 		}).
 		JsonResponseBody(&result).
-		Do(s.T().Context())
+		DoWithoutResponse(s.T().Context())
 	s.require.NoError(err)
 	s.require.Equal(domain.SecureAuthResponse{
 		Authenticated: false,
@@ -165,35 +164,35 @@ func (s *SecureSuite) Test_Authorize_HappyPath() {
 	})
 
 	result := domain.SecureAuthzResponse{}
-	err := s.grpcCli.Invoke("admin/secure/authorize").
+	err := s.httpCli.Post("admin/secure/authorize").
 		JsonRequestBody(domain.SecureAuthzRequest{
 			AdminId:    int(userId),
 			Permission: "perm1",
 		}).
 		JsonResponseBody(&result).
-		Do(s.T().Context())
+		DoWithoutResponse(s.T().Context())
 	s.require.NoError(err)
 	s.require.True(result.Authorized)
 
 	result = domain.SecureAuthzResponse{}
-	err = s.grpcCli.Invoke("admin/secure/authorize").
+	err = s.httpCli.Post("admin/secure/authorize").
 		JsonRequestBody(domain.SecureAuthzRequest{
 			AdminId:    int(userId),
 			Permission: "perm2",
 		}).
 		JsonResponseBody(&result).
-		Do(s.T().Context())
+		DoWithoutResponse(s.T().Context())
 	s.require.NoError(err)
 	s.require.True(result.Authorized)
 
 	result = domain.SecureAuthzResponse{}
-	err = s.grpcCli.Invoke("admin/secure/authorize").
+	err = s.httpCli.Post("admin/secure/authorize").
 		JsonRequestBody(domain.SecureAuthzRequest{
 			AdminId:    int(userId),
 			Permission: "perm3",
 		}).
 		JsonResponseBody(&result).
-		Do(s.T().Context())
+		DoWithoutResponse(s.T().Context())
 	s.require.NoError(err)
 	s.require.False(result.Authorized)
 }
