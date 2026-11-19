@@ -31,9 +31,9 @@ func NewUiSettings(service UiSettingsService) UiSettings {
 // @Produce json
 // @Param body body domain.ClientNameRequest true "Тело запроса"
 // @Success 200 {object} domain.UiOauthSetting
-// @Failure 400 {object} domain.GrpcError
-// @Failure 401 {object} domain.GrpcError "Неизвестное название клиента"
-// @Failure 500 {object} domain.GrpcError
+// @Failure 400 {object} apierrors.Error
+// @Failure 401 {object} apierrors.Error "Неизвестное название клиента"
+// @Failure 500 {object} apierrors.Error
 // @Router /ui_settings/oauth [POST]
 func (c UiSettings) OauthSettings(ctx context.Context, req domain.ClientNameRequest) (*domain.UiOauthSetting, error) {
 	resp, err := c.service.OauthSettings(ctx, req)

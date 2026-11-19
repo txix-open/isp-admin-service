@@ -46,19 +46,25 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     },
                     "401": {
                         "description": "Данные для авторизации не верны",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
+                        }
+                    },
+                    "429": {
+                        "description": "Слишком много запросов на авторизацию",
+                        "schema": {
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     }
                 }
@@ -66,7 +72,7 @@
         },
         "/auth/login_with_oauth": {
             "post": {
-                "description": "Авторизация с получением токена администратора",
+                "description": "Авторизация с получением токена администратора. `errorCode: \u003cErrOauthIsMissedCode\u003e` - OAuth не настроен, `\u003cErrUnauthenticatedCode\u003e` - неверный код или неизвестный клиент",
                 "consumes": [
                     "application/json"
                 ],
@@ -95,22 +101,22 @@
                             "$ref": "#/definitions/domain.LoginResponse"
                         }
                     },
+                    "400": {
+                        "description": "Авторизация OAuth не настроена на сервере",
+                        "schema": {
+                            "$ref": "#/definitions/apierrors.Error"
+                        }
+                    },
                     "401": {
                         "description": "Некорректный код для авторизации или неизвестное название клиента",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
-                        }
-                    },
-                    "412": {
-                        "description": "Авторизация OAuth не настроена на сервере",
-                        "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     }
                 }
@@ -140,18 +146,22 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": "Успешный выход",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
                     },
                     "400": {
                         "description": "Невалидный токен",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     }
                 }
@@ -172,6 +182,13 @@
                 "summary": "Выход по бездействию из авторизованной сессии",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "Токен администратора",
+                        "name": "X-AUTH-ADMIN",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
                         "description": "Тело запроса",
                         "name": "body",
                         "in": "body",
@@ -179,29 +196,26 @@
                         "schema": {
                             "$ref": "#/definitions/domain.LogoutRequest"
                         }
-                    },
-                    {
-                        "type": "string",
-                        "description": "Токен администратора",
-                        "name": "X-AUTH-ADMIN",
-                        "in": "header",
-                        "required": true
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": "Успешный выход",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
                     },
                     "400": {
                         "description": "Невалидный токен",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     }
                 }
@@ -209,6 +223,7 @@
         },
         "/log/all": {
             "post": {
+                "description": "`errorCode: 400` - если тело запроса невалидно",
                 "consumes": [
                     "application/json"
                 ],
@@ -228,7 +243,7 @@
                         "required": true
                     },
                     {
-                        "description": "Тело запроса",
+                        "description": "Тело запроса (пагинация, сортировка, фильтры)",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -247,13 +262,49 @@
                     "400": {
                         "description": "Невалидное тело запроса",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/log/download": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Download"
+                ],
+                "summary": "Скачать журнал аудита в csv",
+                "parameters": [
+                    {
+                        "description": "Тело запроса",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.AuditDownloadRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервиса ```{errorCode: -1}```",
+                        "schema": {
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     }
                 }
@@ -271,7 +322,7 @@
                 "tags": [
                     "log"
                 ],
-                "summary": "Получение списка логов",
+                "summary": "Получение списка событий аудита",
                 "parameters": [
                     {
                         "type": "string",
@@ -279,15 +330,6 @@
                         "name": "X-AUTH-ADMIN",
                         "in": "header",
                         "required": true
-                    },
-                    {
-                        "description": "Тело запроса",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/domain.AuditResponse"
-                        }
                     }
                 ],
                 "responses": {
@@ -300,16 +342,10 @@
                             }
                         }
                     },
-                    "400": {
-                        "description": "Невалидное тело запроса",
-                        "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
-                        }
-                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     }
                 }
@@ -317,7 +353,7 @@
         },
         "/log/set_events": {
             "post": {
-                "description": "Всегда возвращает полный список доступных событий аудита",
+                "description": "Устанавливает (обновляет) набор активных событий аудита. `errorCode: \u003cUnknownAuditEventErrorCode\u003e` - если передано неизвестное событие аудита",
                 "consumes": [
                     "application/json"
                 ],
@@ -327,7 +363,7 @@
                 "tags": [
                     "log"
                 ],
-                "summary": "Получение списка логов",
+                "summary": "Установить события аудита",
                 "parameters": [
                     {
                         "type": "string",
@@ -337,29 +373,36 @@
                         "required": true
                     },
                     {
-                        "description": "Тело запроса",
+                        "description": "Список событий аудита для установки",
                         "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/domain.SetAuditEvent"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/domain.SetAuditEvent"
+                            }
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": "События успешно установлены",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
                     },
                     "400": {
-                        "description": "Невалидное тело запроса",
+                        "description": "Неизвестное событие аудита",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     }
                 }
@@ -409,13 +452,13 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     }
                 }
@@ -431,7 +474,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "user"
+                    "role"
                 ],
                 "summary": "Создать роль",
                 "parameters": [
@@ -456,25 +499,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/domain.User"
+                            "$ref": "#/definitions/domain.Role"
                         }
                     },
                     "400": {
                         "description": "Невалидное тело запроса",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     },
                     "409": {
                         "description": "Роль с указанным именем уже существует",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     }
                 }
@@ -518,13 +561,38 @@
                     "400": {
                         "description": "Невалидное тело запроса",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/role/download": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Download"
+                ],
+                "summary": "Скачать матрицу ролей в csv",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервиса ```{errorCode: -1}```",
+                        "schema": {
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     }
                 }
@@ -571,19 +639,19 @@
                     "404": {
                         "description": "Роль с указанным id не существует",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     },
                     "409": {
                         "description": "Роль с указанным именем уже существует",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     }
                 }
@@ -623,7 +691,7 @@
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     }
                 }
@@ -663,7 +731,7 @@
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     }
                 }
@@ -709,13 +777,49 @@
                     "400": {
                         "description": "Невалидное тело запроса",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/session/download": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Download"
+                ],
+                "summary": "Скачать список сессий в csv",
+                "parameters": [
+                    {
+                        "description": "Тело запроса",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.SessionDownloadRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервиса ```{errorCode: -1}```",
+                        "schema": {
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     }
                 }
@@ -758,13 +862,13 @@
                     "400": {
                         "description": "Невалидное тело запроса",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     }
                 }
@@ -804,19 +908,19 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     },
                     "401": {
                         "description": "Неизвестное название клиента",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     }
                 }
@@ -859,13 +963,13 @@
                     "400": {
                         "description": "Невалидное тело запроса",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     }
                 }
@@ -906,13 +1010,13 @@
                         "description": "OK"
                     },
                     "400": {
-                        "description": "Невалидное тело запроса",
+                        "description": "Невалидное тело запроса или неверный старый пароль",
                         "schema": {
                             "$ref": "#/definitions/apierrors.Error"
                         }
                     },
                     "500": {
-                        "description": "внутренняя ошибка",
+                        "description": "Внутренняя ошибка",
                         "schema": {
                             "$ref": "#/definitions/apierrors.Error"
                         }
@@ -961,19 +1065,19 @@
                     "400": {
                         "description": "Невалидное тело запроса",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     },
                     "409": {
                         "description": "Пользователь с указанным email уже существует",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     }
                 }
@@ -1020,13 +1124,49 @@
                     "400": {
                         "description": "Невалидное тело запроса",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/user/download": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Download"
+                ],
+                "summary": "Скачать список пользователей в csv",
+                "parameters": [
+                    {
+                        "description": "Тело запроса",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.UsersDownloadRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервиса ```{errorCode: -1}```",
+                        "schema": {
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     }
                 }
@@ -1064,13 +1204,13 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     }
                 }
@@ -1109,13 +1249,13 @@
                     "400": {
                         "description": "Невалидное тело запроса",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     }
                 }
@@ -1153,13 +1293,13 @@
                     "400": {
                         "description": "Невалидный токен",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     }
                 }
@@ -1167,7 +1307,7 @@
         },
         "/user/get_permissions": {
             "post": {
-                "description": "Получить все разрашения",
+                "description": "Получить все разрешения",
                 "consumes": [
                     "application/json"
                 ],
@@ -1177,7 +1317,7 @@
                 "tags": [
                     "user"
                 ],
-                "summary": "Получить все разрашения",
+                "summary": "Получить все разрешения",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -1186,6 +1326,12 @@
                             "items": {
                                 "$ref": "#/definitions/domain.Permission"
                             }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     }
                 }
@@ -1220,22 +1366,22 @@
                             "$ref": "#/definitions/domain.AdminUserShort"
                         }
                     },
-                    "400": {
+                    "401": {
                         "description": "Невалидный токен",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     },
                     "404": {
                         "description": "Пользователя не существует",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     }
                 }
@@ -1282,13 +1428,13 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     }
                 }
@@ -1335,25 +1481,25 @@
                     "400": {
                         "description": "Невалидное тело запроса",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     },
                     "404": {
                         "description": "Пользователь с указанным id не существует",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     },
                     "409": {
                         "description": "Пользователь с указанным email уже существует",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/domain.GrpcError"
+                            "$ref": "#/definitions/apierrors.Error"
                         }
                     }
                 }
@@ -1447,6 +1593,29 @@
                 "userId": {
                     "description": "Идентификатор пользователя",
                     "type": "integer"
+                }
+            }
+        },
+        "domain.AuditDownloadRequest": {
+            "type": "object",
+            "required": [
+                "limit"
+            ],
+            "properties": {
+                "limit": {
+                    "description": "Максимальное количество записей",
+                    "type": "integer"
+                },
+                "offset": {
+                    "description": "Отступ для выборки",
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "order": {
+                    "$ref": "#/definitions/domain.OrderParams"
+                },
+                "query": {
+                    "$ref": "#/definitions/domain.AuditQuery"
                 }
             }
         },
@@ -1666,21 +1835,6 @@
                 "id": {
                     "description": "Идентификатор роли",
                     "type": "integer"
-                }
-            }
-        },
-        "domain.GrpcError": {
-            "type": "object",
-            "properties": {
-                "details": {
-                    "type": "array",
-                    "items": {}
-                },
-                "errorCode": {
-                    "type": "string"
-                },
-                "errorMessage": {
-                    "type": "string"
                 }
             }
         },
@@ -1941,6 +2095,29 @@
                 "userId": {
                     "description": "Идентификатор пользоватеккля",
                     "type": "integer"
+                }
+            }
+        },
+        "domain.SessionDownloadRequest": {
+            "type": "object",
+            "required": [
+                "limit"
+            ],
+            "properties": {
+                "limit": {
+                    "description": "Максимальное количество записей",
+                    "type": "integer"
+                },
+                "offset": {
+                    "description": "Отступ для выборки",
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "order": {
+                    "$ref": "#/definitions/domain.OrderParams"
+                },
+                "query": {
+                    "$ref": "#/definitions/domain.SessionQuery"
                 }
             }
         },
@@ -2232,6 +2409,29 @@
                     "items": {
                         "type": "integer"
                     }
+                }
+            }
+        },
+        "domain.UsersDownloadRequest": {
+            "type": "object",
+            "required": [
+                "limit"
+            ],
+            "properties": {
+                "limit": {
+                    "description": "Максимальное количество записей",
+                    "type": "integer"
+                },
+                "offset": {
+                    "description": "Отступ для выборки",
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "order": {
+                    "$ref": "#/definitions/domain.OrderParams"
+                },
+                "query": {
+                    "$ref": "#/definitions/domain.UserQuery"
                 }
             }
         },

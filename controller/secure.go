@@ -32,7 +32,7 @@ func NewSecure(service SecureService) Secure {
 // @Produce json
 // @Param body body domain.SecureAuthRequest true "Тело запроса"
 // @Success 200 {object} domain.SecureAuthResponse
-// @Failure 500 {object} domain.GrpcError
+// @Failure 500 {object} apierrors.Error
 // @Router /secure/authenticate [POST]
 func (s Secure) Authenticate(ctx context.Context, req domain.SecureAuthRequest) (*domain.SecureAuthResponse, error) {
 	adminId, err := s.service.Authenticate(ctx, req.Token)
@@ -68,7 +68,7 @@ func (s Secure) Authenticate(ctx context.Context, req domain.SecureAuthRequest) 
 // @Produce json
 // @Param body body domain.SecureAuthzRequest true "Тело запроса"
 // @Success 200 {object} domain.SecureAuthzResponse
-// @Failure 500 {object} domain.GrpcError
+// @Failure 500 {object} apierrors.Error
 // @Router /secure/authorize [POST]
 func (s Secure) Authorize(ctx context.Context, req domain.SecureAuthzRequest) (*domain.SecureAuthzResponse, error) {
 	ok, err := s.service.Authorize(ctx, req.AdminId, req.Permission)

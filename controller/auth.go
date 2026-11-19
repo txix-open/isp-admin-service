@@ -38,9 +38,9 @@ func NewAuth(authService authService, logger log.Logger) Auth {
 // @Accept json
 // @Produce json
 // @Param X-AUTH-ADMIN header string true "Токен администратора"
-// @Success 200
-// @Failure 400 {object} domain.GrpcError "Невалидный токен"
-// @Failure 500 {object} domain.GrpcError
+// @Success 200 {object} map[string]interface{} "Успешный выход"
+// @Failure 400 {object} apierrors.Error "Невалидный токен"
+// @Failure 500 {object} apierrors.Error
 // @Router /auth/logout [POST]
 func (a Auth) Logout(ctx context.Context, r *http.Request) error {
 	adminId, err := getAdminId(r)
@@ -62,11 +62,11 @@ func (a Auth) Logout(ctx context.Context, r *http.Request) error {
 // @Description Выход по бездействию из авторизованной сессии администрирования
 // @Accept json
 // @Produce json
-// @Param body body domain.LogoutRequest true "Тело запроса"
 // @Param X-AUTH-ADMIN header string true "Токен администратора"
-// @Success 200
-// @Failure 400 {object} domain.GrpcError "Невалидный токен"
-// @Failure 500 {object} domain.GrpcError
+// @Param body body domain.LogoutRequest true "Тело запроса"
+// @Success 200 {object} map[string]interface{} "Успешный выход"
+// @Failure 400 {object} apierrors.Error "Невалидный токен"
+// @Failure 500 {object} apierrors.Error
 // @Router /auth/logout_with_reason [POST]
 func (a Auth) LogoutWithReason(ctx context.Context, logoutRequest domain.LogoutRequest, r *http.Request) error {
 	adminId, err := getAdminId(r)
@@ -90,9 +90,10 @@ func (a Auth) LogoutWithReason(ctx context.Context, logoutRequest domain.LogoutR
 // @Produce json
 // @Param body body domain.LoginRequest true "Тело запроса"
 // @Success 200 {object} domain.LoginResponse
-// @Failure 400 {object} domain.GrpcError
-// @Failure 401 {object} domain.GrpcError "Данные для авторизации не верны"
-// @Failure 500 {object} domain.GrpcError
+// @Failure 400 {object} apierrors.Error
+// @Failure 401 {object} apierrors.Error "Данные для авторизации не верны"
+// @Failure 429 {object} apierrors.Error "Слишком много запросов на авторизацию"
+// @Failure 500 {object} apierrors.Error
 // @Router /auth/login [POST]
 func (a Auth) Login(ctx context.Context, authRequest domain.LoginRequest) (*domain.LoginResponse, error) {
 	auth, err := a.authService.Login(ctx, authRequest)
@@ -115,14 +116,14 @@ func (a Auth) Login(ctx context.Context, authRequest domain.LoginRequest) (*doma
 // LoginWithOauth
 // @Tags auth
 // @Summary Авторизация по авторизационному коду от OAuth
-// @Description Авторизация с получением токена администратора
+// @Description Авторизация с получением токена администратора. `errorCode: <ErrOauthIsMissedCode>` - OAuth не настроен, `<ErrUnauthenticatedCode>` - неверный код или неизвестный клиент
 // @Accept json
 // @Produce json
 // @Param body body domain.LoginOauthRequest true "Тело запроса"
 // @Success 200 {object} domain.LoginResponse
-// @Failure 401 {object} domain.GrpcError "Некорректный код для авторизации или неизвестное название клиента"
-// @Failure 412 {object} domain.GrpcError "Авторизация OAuth не настроена на сервере"
-// @Failure 500 {object} domain.GrpcError
+// @Failure 400 {object} apierrors.Error "Авторизация OAuth не настроена на сервере"
+// @Failure 401 {object} apierrors.Error "Некорректный код для авторизации или неизвестное название клиента"
+// @Failure 500 {object} apierrors.Error
 // @Router /auth/login_with_oauth [POST]
 func (a Auth) LoginWithOauth(ctx context.Context, request domain.LoginOauthRequest) (*domain.LoginResponse, error) {
 	auth, err := a.authService.LoginWithOauth(ctx, request)

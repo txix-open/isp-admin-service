@@ -26,8 +26,8 @@ func NewCustomization(uiCfg conf.UIDesign) Customization {
 // @Produce json
 // @Param X-AUTH-ADMIN header string true "Токен администратора"
 // @Success 200 {object} domain.UIDesign
-// @Failure 400 {object} domain.GrpcError "Невалидный токен"
-// @Failure 500 {object} domain.GrpcError
+// @Failure 400 {object} apierrors.Error "Невалидный токен"
+// @Failure 500 {object} apierrors.Error
 // @Router /user/get_design [POST]
 func (c Customization) GetUIDesign() (domain.UIDesign, error) {
 	return c.uiCfg, nil

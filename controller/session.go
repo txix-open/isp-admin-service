@@ -29,8 +29,8 @@ func NewSession(service SessionService) Session {
 // @Param X-AUTH-ADMIN header string true "Токен администратора"
 // @Param body body domain.SessionPageRequest true "Тело запроса"
 // @Success 200 {object} domain.SessionResponse
-// @Failure 400 {object} domain.GrpcError "Невалидное тело запроса"
-// @Failure 500 {object} domain.GrpcError
+// @Failure 400 {object} apierrors.Error "Невалидное тело запроса"
+// @Failure 500 {object} apierrors.Error
 // @Router /session/all [POST]
 func (c Session) All(ctx context.Context, req domain.SessionPageRequest) (*domain.SessionResponse, error) {
 	if req.Order == nil {
@@ -51,8 +51,8 @@ func (c Session) All(ctx context.Context, req domain.SessionPageRequest) (*domai
 // @Param X-AUTH-ADMIN header string true "Токен администратора"
 // @Param body body domain.RevokeRequest true "Тело запроса"
 // @Success 200
-// @Failure 400 {object} domain.GrpcError "Невалидное тело запроса"
-// @Failure 500 {object} domain.GrpcError
+// @Failure 400 {object} apierrors.Error "Невалидное тело запроса"
+// @Failure 500 {object} apierrors.Error
 // @Router /session/revoke [POST]
 func (c Session) Revoke(ctx context.Context, req domain.RevokeRequest) error {
 	return c.service.Revoke(ctx, req.Id)
