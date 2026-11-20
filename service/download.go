@@ -27,7 +27,6 @@ type AdminRepo interface {
 	GetSessions(ctx context.Context, req domain.SessionDownloadRequest) (*entity.SessionResponse, error)
 	GetUsers(ctx context.Context, req domain.UsersDownloadRequest) ([]entity.User, error)
 	GetRoles(ctx context.Context) ([]entity.Role, error)
-	GetRoleNamesByIds(ctx context.Context, roleIds []int) ([]string, error)
 	GetPermissions(ctx context.Context) ([]entity.Permission, error)
 }
 

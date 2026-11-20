@@ -4,19 +4,17 @@ import (
 	"context"
 	"isp-admin-service/domain"
 	"isp-admin-service/entity"
-	"slices"
 
 	"github.com/txix-open/isp-kit/errors"
 	"github.com/txix-open/isp-kit/http/httpcli"
 )
 
 const (
-	getUserById    = "admin/user/get_by_id"
-	getAllLogs     = "admin/log/all"
-	getAllSessions = "admin/session/all"
-	getAllUsers    = "admin/user/get_users"
-	getAllRoles    = "admin/role/all"
-	getPermissions = "admin/user/get_permissions"
+	getAllLogs     = "/admin/log/all"
+	getAllSessions = "/admin/session/all"
+	getAllUsers    = "/admin/user/get_users"
+	getAllRoles    = "/admin/role/all"
+	getPermissions = "/admin/user/get_permissions"
 )
 
 type ReqGetById struct {
@@ -33,29 +31,6 @@ type Admin struct {
 
 func NewAdmin(cli *httpcli.Client) Admin {
 	return Admin{cli: cli}
-}
-
-func (r Admin) GetRoleNamesByIds(ctx context.Context, roleIds []int) ([]string, error) {
-	if len(roleIds) == 0 {
-		return []string{}, nil
-	}
-	resp := make([]entity.Role, 0)
-	err := r.cli.Post(getAllRoles).
-		JsonResponseBody(&resp).
-		StatusCodeToError().
-		DoWithoutResponse(ctx)
-	if err != nil {
-		return nil, errors.WithMessagef(err, "http client request %s", getAllRoles)
-	}
-
-	roleNames := make([]string, 0)
-	for _, role := range resp {
-		if slices.Contains(roleIds, role.Id) {
-			roleNames = append(roleNames, role.Name)
-		}
-	}
-
-	return roleNames, nil
 }
 
 func (r Admin) GetAudit(ctx context.Context, req domain.AuditDownloadRequest) (*entity.AuditResponse, error) {

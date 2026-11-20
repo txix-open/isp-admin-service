@@ -223,28 +223,28 @@ func endpointDescriptors(c Controllers) []cluster.EndpointDescriptor {
 		},
 		// download
 		{
-			Path:       "/user/download",
+			Path:       "user/download",
 			Inner:      true,
 			Extra:      cluster.RequireAdminPermission("data_download"),
 			Handler:    c.Download.Users,
 			HttpMethod: http.MethodPost,
 		},
 		{
-			Path:       "/session/download",
+			Path:       "session/download",
 			Inner:      true,
 			Extra:      cluster.RequireAdminPermission("data_download"),
 			Handler:    c.Download.Sessions,
 			HttpMethod: http.MethodPost,
 		},
 		{
-			Path:       "/log/download",
+			Path:       "log/download",
 			Inner:      true,
 			Extra:      cluster.RequireAdminPermission("data_download"),
 			Handler:    c.Download.Audit,
 			HttpMethod: http.MethodPost,
 		},
 		{
-			Path:       "/role/download",
+			Path:       "role/download",
 			Inner:      true,
 			Extra:      cluster.RequireAdminPermission("data_download"),
 			Handler:    c.Download.Roles,
