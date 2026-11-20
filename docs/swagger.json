@@ -72,7 +72,7 @@
         },
         "/auth/login_with_oauth": {
             "post": {
-                "description": "Авторизация с получением токена администратора. `errorCode: \u003cErrOauthIsMissedCode\u003e` - OAuth не настроен, `\u003cErrUnauthenticatedCode\u003e` - неверный код или неизвестный клиент",
+                "description": "Авторизация с получением токена администратора.",
                 "consumes": [
                     "application/json"
                 ],
@@ -353,7 +353,7 @@
         },
         "/log/set_events": {
             "post": {
-                "description": "Устанавливает (обновляет) набор активных событий аудита. `errorCode: \u003cUnknownAuditEventErrorCode\u003e` - если передано неизвестное событие аудита",
+                "description": "Устанавливает (обновляет) набор активных событий аудита.",
                 "consumes": [
                     "application/json"
                 ],
