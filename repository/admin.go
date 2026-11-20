@@ -21,10 +21,6 @@ type ReqGetById struct {
 	UserId int `json:"userId"`
 }
 
-type getRoleResp struct {
-	Roles []int `json:"roles"`
-}
-
 type Admin struct {
 	cli *httpcli.Client
 }

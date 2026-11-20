@@ -26,6 +26,7 @@ var (
 	ErrUnknownClient        = errors.New("unknown client")
 )
 
+// nolint:gochecknoglobals
 var (
 	UnknownAuditEventErrorCode  = 1
 	ErrOauthAuthorizationCode   = 2

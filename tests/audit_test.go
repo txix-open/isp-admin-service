@@ -179,15 +179,12 @@ func (s *AuditSuite) Test_SetEvents_InvalidEvent() {
 	var httpErr httpcli.ErrorResponse
 	s.Require().ErrorAs(err, &httpErr)
 	s.Require().Equal(http.StatusBadRequest, httpErr.StatusCode) // не уверен тут какой код проверять? Статус или внутренний? Коммент чтобы не забыть
-
 }
 
 func (s *AuditSuite) Test_All_Logs() {
 	request := domain.AuditPageRequest{
-		LimitOffsetParams: domain.LimitOffsetParams{
-			Limit:  3,
-			Offset: 5,
-		},
+		Limit:  3,
+		Offset: 5,
 		Order: &domain.OrderParams{
 			Field: "user_id",
 			Type:  "desc",

@@ -49,10 +49,8 @@ func TestInactiveWorker(t *testing.T) {
 	require.True(user.Blocked)
 
 	list, err := repository.NewAudit(db).AllByRequest(t.Context(), domain.AuditPageRequest{
-		LimitOffsetParams: domain.LimitOffsetParams{
-			Limit:  10,
-			Offset: 0,
-		},
+		Limit:  10,
+		Offset: 0,
 		Order: &domain.OrderParams{
 			Field: "created_at",
 			Type:  "desc",

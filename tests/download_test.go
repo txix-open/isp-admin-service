@@ -1,3 +1,4 @@
+// nolint: funlen
 package tests_test
 
 import (
@@ -79,7 +80,7 @@ func (s *DownloadSuite) TestUsersHappyPath() {
 
 	resp, err := s.httpCli.Post("user/download").
 		JsonRequestBody(domain.UsersDownloadRequest{
-			LimitOffsetParams: domain.LimitOffsetParams{Limit: 1000, Offset: 0},
+			Limit: 1000, Offset: 0,
 		}).
 		Do(s.T().Context())
 	s.Require().NoError(err)
@@ -118,7 +119,7 @@ func (s *DownloadSuite) TestSessionsHappyPath() {
 
 	resp, err := s.httpCli.Post("/session/download").
 		JsonRequestBody(domain.SessionDownloadRequest{
-			LimitOffsetParams: domain.LimitOffsetParams{Limit: 1000, Offset: 0},
+			Limit: 1000, Offset: 0,
 		}).
 		Do(s.T().Context())
 	s.Require().NoError(err)
@@ -153,7 +154,7 @@ func (s *DownloadSuite) TestAuditHappyPath() {
 
 	resp, err := s.httpCli.Post("log/download").
 		JsonRequestBody(domain.AuditDownloadRequest{
-			LimitOffsetParams: domain.LimitOffsetParams{Limit: 1000, Offset: 0},
+			Limit: 1000, Offset: 0,
 		}).
 		StatusCodeToError().
 		Do(s.T().Context())
@@ -192,21 +193,21 @@ func (s *DownloadSuite) initMockDownload() {
 	mocksrv.POST("/user/download", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"Items": []domain.User{{Id: 0, FullName: "Bob Alice", Email: "alice@a.ru"}},
 		})
 	})
 	mocksrv.POST("/session/download", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"Items": []domain.User{{Id: 0, FullName: "Sess1", Email: "sess1@a.ru"}},
 		})
 	})
 	mocksrv.POST("/log/download", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"TotalCount": 1,
 			"Items":      []domain.Audit{{Id: 0, UserId: 0, Message: "audit1@a.ru"}},
 		})
@@ -214,7 +215,7 @@ func (s *DownloadSuite) initMockDownload() {
 	mocksrv.POST("/role/download", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"Items": []domain.User{{Id: 0, Roles: []int{0}, Email: "admin@a.ru"}},
 		})
 	})
@@ -222,7 +223,7 @@ func (s *DownloadSuite) initMockDownload() {
 	mocksrv.POST("/admin/user/get_users", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"Items": []domain.User{{
 				Id:       1,
 				FullName: "Bob Alice",
@@ -235,17 +236,16 @@ func (s *DownloadSuite) initMockDownload() {
 	mocksrv.POST("/admin/user/get_permissions", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode([]domain.Permission{{
+		_ = json.NewEncoder(w).Encode([]domain.Permission{{
 			Key:  "data_download",
 			Name: "123",
 		}})
-
 	})
 
 	mocksrv.POST("/admin/session/all", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"Items": []domain.Session{{
 				Id:     1,
 				UserId: 1,
@@ -257,7 +257,7 @@ func (s *DownloadSuite) initMockDownload() {
 	mocksrv.POST("/admin/log/all", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"Items": []domain.Audit{{
 				Id:      1,
 				UserId:  1,
@@ -270,7 +270,7 @@ func (s *DownloadSuite) initMockDownload() {
 	mocksrv.POST("/admin/role/all", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode([]domain.Role{{
+		_ = json.NewEncoder(w).Encode([]domain.Role{{
 			Id:   1,
 			Name: "admin",
 		}})

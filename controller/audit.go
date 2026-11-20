@@ -66,7 +66,7 @@ func (c Audit) Events(ctx context.Context) ([]domain.AuditEvent, error) {
 // SetEvents
 // @Tags log
 // @Summary Установить события аудита
-// @Description Устанавливает (обновляет) набор активных событий аудита. `errorCode: <UnknownAuditEventErrorCode>` - если передано неизвестное событие аудита
+// @Description Устанавливает (обновляет) набор активных событий аудита.
 // @Accept json
 // @Produce json
 // @Param X-AUTH-ADMIN header string true "Токен администратора"

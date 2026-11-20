@@ -264,10 +264,8 @@ func (s Download) DownloadRoles(ctx context.Context, w http.ResponseWriter) erro
 
 func (s Download) getUsersList(ctx context.Context) (map[int]entity.User, error) {
 	users, err := s.repo.GetUsers(ctx, domain.UsersDownloadRequest{
-		LimitOffsetParams: domain.LimitOffsetParams{
-			Limit:  requestLimit,
-			Offset: 0,
-		},
+		Limit:  requestLimit,
+		Offset: 0,
 	})
 	if err != nil {
 		return nil, errors.WithMessage(err, "get users")

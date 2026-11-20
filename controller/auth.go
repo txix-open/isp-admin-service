@@ -116,7 +116,7 @@ func (a Auth) Login(ctx context.Context, authRequest domain.LoginRequest) (*doma
 // LoginWithOauth
 // @Tags auth
 // @Summary Авторизация по авторизационному коду от OAuth
-// @Description Авторизация с получением токена администратора. `errorCode: <ErrOauthIsMissedCode>` - OAuth не настроен, `<ErrUnauthenticatedCode>` - неверный код или неизвестный клиент
+// @Description Авторизация с получением токена администратора.
 // @Accept json
 // @Produce json
 // @Param body body domain.LoginOauthRequest true "Тело запроса"

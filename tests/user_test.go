@@ -185,10 +185,8 @@ func (s *UserTestSuite) TestGetUsers() {
 	response := domain.UsersResponse{}
 	err := s.apiCli.Post("admin/user/get_users").
 		JsonRequestBody(domain.UsersPageRequest{
-			LimitOffsetParams: domain.LimitOffsetParams{
-				Limit:  5,
-				Offset: 1,
-			},
+			Limit:  5,
+			Offset: 1,
 			Order: &domain.OrderParams{
 				Field: "email",
 				Type:  "asc",
@@ -213,10 +211,8 @@ func (s *UserTestSuite) TestGetUsers() {
 	email = "test@mail.ru"
 	err = s.apiCli.Post("admin/user/get_users").
 		JsonRequestBody(domain.UsersPageRequest{
-			LimitOffsetParams: domain.LimitOffsetParams{
-				Limit:  10,
-				Offset: 0,
-			},
+			Limit:  10,
+			Offset: 0,
 			Order: &domain.OrderParams{
 				Field: "id",
 				Type:  "asc",
@@ -300,10 +296,8 @@ func (s *UserTestSuite) TestGetUsersFilterByLastActiveAt() {
 	response := domain.UsersResponse{}
 	err = s.apiCli.Post("admin/user/get_users").
 		JsonRequestBody(domain.UsersPageRequest{
-			LimitOffsetParams: domain.LimitOffsetParams{
-				Limit:  5,
-				Offset: 0,
-			},
+			Limit:  5,
+			Offset: 0,
 			Order: &domain.OrderParams{
 				Field: "lastSessionCreatedAt",
 				Type:  "desc",
@@ -336,10 +330,8 @@ func (s *UserTestSuite) TestGetUsersSortByName() {
 	response := domain.UsersResponse{}
 	err := s.apiCli.Post("admin/user/get_users").
 		JsonRequestBody(domain.UsersPageRequest{
-			LimitOffsetParams: domain.LimitOffsetParams{
-				Limit:  10,
-				Offset: 0,
-			},
+			Limit:  10,
+			Offset: 0,
 			Order: &domain.OrderParams{
 				Field: "userId",
 				Type:  "asc",
