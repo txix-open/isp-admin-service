@@ -25,6 +25,7 @@ const (
 	updatedAtRolesColumn     = "updated_at"
 	permissionsRolesColumn   = "permissions"
 	externalGroupRolesColumn = "external_group"
+	applicationGroupColumn   = "application_group"
 	immutableRolesColumn     = "immutable"
 	exclusiveRolesColumn     = "exclusive"
 )
@@ -37,7 +38,7 @@ func (r Role) GetRoleByIds(ctx context.Context, id []int) ([]entity.Role, error)
 	ctx = sql_metrics.OperationLabelToContext(ctx, "Role.GetRoleByIds")
 
 	q, args, err := query.New().
-		Select("id, name, external_group, permissions, created_at, updated_at").
+		Select("id, name, external_group, application_group, permissions, created_at, updated_at").
 		From("roles").
 		Where(squirrel.Eq{"id": id}).
 		ToSql()
@@ -67,6 +68,7 @@ func (r Role) GetRoleByName(ctx context.Context, name string) (*entity.Role, err
 			updatedAtRolesColumn,
 			permissionsRolesColumn,
 			externalGroupRolesColumn,
+			applicationGroupColumn,
 			immutableRolesColumn,
 			exclusiveRolesColumn,
 		).
@@ -101,6 +103,7 @@ func (r Role) GetRolesByExternalGroup(ctx context.Context, groups []string) ([]e
 			updatedAtRolesColumn,
 			permissionsRolesColumn,
 			externalGroupRolesColumn,
+			applicationGroupColumn,
 			immutableRolesColumn,
 			exclusiveRolesColumn,
 		).
@@ -122,9 +125,21 @@ func (r Role) GetRolesByExternalGroup(ctx context.Context, groups []string) ([]e
 
 func (r Role) All(ctx context.Context) ([]entity.Role, error) {
 	ctx = sql_metrics.OperationLabelToContext(ctx, "Role.All")
-	q := "select id, name, external_group, permissions, immutable, exclusive, created_at, updated_at from roles order by created_at"
+	q := "select id, name, external_group, application_group, permissions, immutable, exclusive, created_at, updated_at from roles order by created_at"
 	roles := make([]entity.Role, 0)
 	err := r.db.Select(ctx, &roles, q)
+	if err != nil {
+		return nil, errors.WithMessage(err, "select all roles")
+	}
+	return roles, nil
+}
+
+func (r Role) AllWithFilter(ctx context.Context, applicationGroup string) ([]entity.Role, error) {
+	ctx = sql_metrics.OperationLabelToContext(ctx, "Role.AllWithFilter")
+	roles := make([]entity.Role, 0)
+	err := r.db.Select(ctx, &roles, `
+		select id, name, external_group, application_group, permissions, immutable, exclusive, created_at, updated_at 
+		from roles where application_group=$1 order by created_at`, applicationGroup)
 	if err != nil {
 		return nil, errors.WithMessage(err, "select all roles")
 	}
@@ -135,8 +150,8 @@ func (r Role) InsertRole(ctx context.Context, role entity.Role) (*entity.Role, e
 	ctx = sql_metrics.OperationLabelToContext(ctx, "Role.InsertRole")
 
 	q, args, err := query.New().Insert("roles").
-		Columns("name", "permissions", "external_group").
-		Values(role.Name, role.Permissions, role.ExternalGroup).
+		Columns("name", "permissions", "external_group", "application_group").
+		Values(role.Name, role.Permissions, role.ExternalGroup, role.ApplicationGroup).
 		Suffix("RETURNING *").ToSql()
 	if err != nil {
 		return nil, errors.WithMessage(err, "build query")
@@ -158,6 +173,7 @@ func (r Role) Update(ctx context.Context, role entity.Role) (*entity.Role, error
 		Set("name", role.Name).
 		Set("permissions", role.Permissions).
 		Set("external_group", role.ExternalGroup).
+		Set("application_group", role.ApplicationGroup).
 		Where(squirrel.Eq{"id": role.Id}).
 		Suffix("RETURNING *").ToSql()
 	if err != nil {

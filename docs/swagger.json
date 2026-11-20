@@ -385,6 +385,15 @@
                         "name": "X-AUTH-ADMIN",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "description": "Тело запроса",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.RoleAllRequest"
+                        }
                     }
                 ],
                 "responses": {
@@ -1564,6 +1573,10 @@
         "domain.CreateRoleRequest": {
             "type": "object",
             "properties": {
+                "applicationGroup": {
+                    "description": "Группа приложений",
+                    "type": "string"
+                },
                 "changeMessage": {
                     "description": "Причина изменений",
                     "type": "string"
@@ -1805,6 +1818,10 @@
         "domain.Role": {
             "type": "object",
             "properties": {
+                "applicationGroup": {
+                    "description": "Группа приложений",
+                    "type": "string"
+                },
                 "changeMessage": {
                     "description": "Причина изменений",
                     "type": "string"
@@ -1840,6 +1857,15 @@
                 },
                 "updatedAt": {
                     "description": "Дата обновления",
+                    "type": "string"
+                }
+            }
+        },
+        "domain.RoleAllRequest": {
+            "type": "object",
+            "properties": {
+                "applicationGroup": {
+                    "description": "Фильтр по группе приложений",
                     "type": "string"
                 }
             }
@@ -2049,6 +2075,10 @@
         "domain.UpdateRoleRequest": {
             "type": "object",
             "properties": {
+                "applicationGroup": {
+                    "description": "Группа приложений",
+                    "type": "string"
+                },
                 "changeMessage": {
                     "description": "Причина изменений",
                     "type": "string"

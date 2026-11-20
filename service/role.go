@@ -13,6 +13,7 @@ import (
 
 type roleRoleRepo interface {
 	All(ctx context.Context) ([]entity.Role, error)
+	AllWithFilter(ctx context.Context, applicationGroup string) ([]entity.Role, error)
 	InsertRole(ctx context.Context, role entity.Role) (*entity.Role, error)
 	Update(ctx context.Context, role entity.Role) (*entity.Role, error)
 	Delete(ctx context.Context, id int) error
@@ -32,8 +33,17 @@ func NewRole(roleRepo roleRoleRepo, audit auditService) Role {
 	}
 }
 
-func (u Role) All(ctx context.Context) ([]domain.Role, error) {
-	roles, err := u.roleRepo.All(ctx)
+func (u Role) All(ctx context.Context, req domain.RoleAllRequest) ([]domain.Role, error) {
+	var (
+		roles []entity.Role
+		err   error
+	)
+	switch {
+	case req.ApplicationGroup != nil:
+		roles, err = u.roleRepo.AllWithFilter(ctx, *req.ApplicationGroup)
+	default:
+		roles, err = u.roleRepo.All(ctx)
+	}
 	if err != nil {
 		return nil, errors.WithMessage(err, "get all roles")
 	}
@@ -58,9 +68,10 @@ func (u Role) Create(ctx context.Context, req domain.CreateRoleRequest, adminId 
 	}
 
 	role, err = u.roleRepo.InsertRole(ctx, entity.Role{
-		Name:          req.Name,
-		ExternalGroup: req.ExternalGroup,
-		Permissions:   req.Permissions,
+		Name:             req.Name,
+		ExternalGroup:    req.ExternalGroup,
+		ApplicationGroup: req.ApplicationGroup,
+		Permissions:      req.Permissions,
 	})
 
 	if err != nil {
@@ -69,13 +80,15 @@ func (u Role) Create(ctx context.Context, req domain.CreateRoleRequest, adminId 
 
 	slices.Sort(role.Permissions)
 	diff := diffToString(map[string]any{
-		"Название":   "",
-		"Группа ЕСК": "",
-		"Разрешения": []int{},
+		"Название":          "",
+		"Группа ЕСК":        "",
+		"Группа приложений": "",
+		"Разрешения":        []int{},
 	}, map[string]any{
-		"Название":   role.Name,
-		"Группа ЕСК": role.ExternalGroup,
-		"Разрешения": role.Permissions,
+		"Название":          role.Name,
+		"Группа ЕСК":        role.ExternalGroup,
+		"Группа приложений": role.ApplicationGroup,
+		"Разрешения":        role.Permissions,
 	})
 	u.auditService.SaveAuditAsync(ctx, adminId,
 		fmt.Sprintf("Роль. Создание новой роли %s. Причина: %s. \n %s", req.Name, req.ChangeMessage, diff),
@@ -106,10 +119,11 @@ func (u Role) Update(ctx context.Context, req domain.UpdateRoleRequest, adminId 
 	oldRole := roles[0]
 
 	role, err := u.roleRepo.Update(ctx, entity.Role{
-		Id:            req.Id,
-		Name:          req.Name,
-		ExternalGroup: req.ExternalGroup,
-		Permissions:   req.Permissions,
+		Id:               req.Id,
+		Name:             req.Name,
+		ExternalGroup:    req.ExternalGroup,
+		ApplicationGroup: req.ApplicationGroup,
+		Permissions:      req.Permissions,
 	})
 
 	if err != nil {
@@ -119,13 +133,15 @@ func (u Role) Update(ctx context.Context, req domain.UpdateRoleRequest, adminId 
 	slices.Sort(oldRole.Permissions)
 	slices.Sort(role.Permissions)
 	diff := diffToString(map[string]any{
-		"Название":   oldRole.Name,
-		"Группа ЕСК": oldRole.ExternalGroup,
-		"Разрешения": oldRole.Permissions,
+		"Название":          oldRole.Name,
+		"Группа ЕСК":        oldRole.ExternalGroup,
+		"Группа приложений": oldRole.ApplicationGroup,
+		"Разрешения":        oldRole.Permissions,
 	}, map[string]any{
-		"Название":   role.Name,
-		"Группа ЕСК": role.ExternalGroup,
-		"Разрешения": role.Permissions,
+		"Название":          role.Name,
+		"Группа ЕСК":        role.ExternalGroup,
+		"Группа приложений": role.ApplicationGroup,
+		"Разрешения":        role.Permissions,
 	})
 	u.auditService.SaveAuditAsync(ctx, adminId,
 		fmt.Sprintf("Роль. Изменение роли %s. Причина: %s. \n %s", req.Name, req.ChangeMessage, diff),
@@ -148,13 +164,14 @@ func (u Role) Delete(ctx context.Context, req domain.DeleteRoleRequest, adminId 
 
 func (u Role) toDomain(role entity.Role) domain.Role {
 	return domain.Role{
-		Id:            role.Id,
-		Name:          role.Name,
-		ExternalGroup: role.ExternalGroup,
-		Permissions:   role.Permissions,
-		Immutable:     role.Immutable,
-		Exclusive:     role.Exclusive,
-		CreatedAt:     role.CreatedAt,
-		UpdatedAt:     role.UpdatedAt,
+		Id:               role.Id,
+		Name:             role.Name,
+		ExternalGroup:    role.ExternalGroup,
+		ApplicationGroup: role.ApplicationGroup,
+		Permissions:      role.Permissions,
+		Immutable:        role.Immutable,
+		Exclusive:        role.Exclusive,
+		CreatedAt:        role.CreatedAt,
+		UpdatedAt:        role.UpdatedAt,
 	}
 }

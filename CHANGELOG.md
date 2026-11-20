@@ -1,3 +1,7 @@
+### v7.2.0
+* Добавлено поле `application_group` в таблицу `roles`
+  * Добавлен для запросов `admin/role/create` и `admin/role/update`, необязателен
+  * Изменен эндпоинт `admin/role/all`, теперь результаты фильтруются по группе из тела запроса, при пустом теле без фильтрации
 ### v7.1.0
 * переименование авторизации через SUDIR в OAuth:
   * Эндпоинты: `admin/auth/login_with_oauth`, `admin/ui_settings/oauth`

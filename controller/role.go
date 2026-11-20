@@ -12,7 +12,7 @@ import (
 )
 
 type roleService interface {
-	All(ctx context.Context) ([]domain.Role, error)
+	All(ctx context.Context, req domain.RoleAllRequest) ([]domain.Role, error)
 	Create(ctx context.Context, req domain.CreateRoleRequest, adminId int64) (*domain.Role, error)
 	Update(ctx context.Context, req domain.UpdateRoleRequest, adminId int64) (*domain.Role, error)
 	Delete(ctx context.Context, req domain.DeleteRoleRequest, adminId int64) error
@@ -35,12 +35,13 @@ func NewRole(roleService roleService) Role {
 // @Accept json
 // @Produce json
 // @Param X-AUTH-ADMIN header string true "Токен администратора"
+// @Param body body domain.RoleAllRequest true "Тело запроса"
 // @Success 200 {array} domain.Role
 // @Failure 400 {object} domain.GrpcError
 // @Failure 500 {object} domain.GrpcError
 // @Router /role/all [POST]
-func (u Role) All(ctx context.Context) ([]domain.Role, error) {
-	users, err := u.roleService.All(ctx)
+func (u Role) All(ctx context.Context, req domain.RoleAllRequest) ([]domain.Role, error) {
+	users, err := u.roleService.All(ctx, req)
 	if err != nil {
 		return nil, errors.WithMessage(err, "get roles")
 	}

@@ -183,10 +183,8 @@ func (s *AuditSuite) Test_SetEvents_InvalidEvent() {
 
 func (s *AuditSuite) Test_All_Logs() {
 	request := domain.AuditPageRequest{
-		LimitOffestParams: domain.LimitOffestParams{
-			Limit:  3,
-			Offset: 5,
-		},
+		Limit:  3,
+		Offset: 5,
 		Order: &domain.OrderParams{
 			Field: "user_id",
 			Type:  "desc",
