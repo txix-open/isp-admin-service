@@ -1,7 +1,5 @@
 package entity
 
-import "time"
-
 const (
 	SessionStatusAllowed    = "ALLOWED"
 	SessionStatusAllowedRus = "Активная"
@@ -12,33 +10,6 @@ const (
 	SessionStatusRevoked    = "REVOKED"
 	SessionStatusRevokedRus = "Отмененная"
 )
-
-type AuditResponse struct {
-	TotalCount int
-	Items      []Audit
-}
-
-type Session struct {
-	Id        int
-	UserId    int
-	Status    string
-	ExpiredAt time.Time
-	CreatedAt time.Time
-}
-
-type SessionResponse struct {
-	TotalCount int
-	Items      []Session
-}
-
-type UsersResponse struct {
-	Items []User
-}
-
-type Permission struct {
-	Key  string
-	Name string
-}
 
 func AuditColumnNames() []string {
 	return []string{"Пользователь", "Время события", "Действие"}
