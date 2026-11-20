@@ -54,7 +54,7 @@ func (s *UserTestSuite) SetupTest() {
 	remote := conf.Remote{
 		ExpireSec: 0,
 	}
-	cfg, err := assembly.NewLocator(testInstance.Logger(), s.httpCli, nil, s.db).
+	cfg, err := assembly.NewLocator(testInstance.Logger(), s.httpCli, s.db).
 		Config(s.T().Context(), remote, time.Minute)
 	s.Require().NoError(err)
 

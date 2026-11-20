@@ -31,18 +31,6 @@ type SessionResponse struct {
 	Items      []Session
 }
 
-func (s Session) StatusRus() string {
-	switch s.Status {
-	case SessionStatusAllowed:
-		return SessionStatusAllowedRus
-	case SessionStatusExpired:
-		return SessionStatusExpiredRus
-	case SessionStatusRevoked:
-		return SessionStatusRevokedRus
-	}
-	return ""
-}
-
 type UsersResponse struct {
 	Items []User
 }

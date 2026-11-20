@@ -4,6 +4,17 @@ import (
 	"time"
 )
 
+const (
+	SessionStatusAllowed    = "ALLOWED"
+	SessionStatusAllowedRus = "Активная"
+
+	SessionStatusExpired    = "EXPIRED"
+	SessionStatusExpiredRus = "Истекшая"
+
+	SessionStatusRevoked    = "REVOKED"
+	SessionStatusRevokedRus = "Отмененная"
+)
+
 type Session struct {
 	Id        int       // Идентификатор сессии
 	UserId    int       // Идентификатор пользоватеккля
@@ -34,4 +45,16 @@ type SessionResponse struct {
 
 type RevokeRequest struct {
 	Id int `validate:"required"` // Идентификатор сессии
+}
+
+func (s Session) StatusRus() string {
+	switch s.Status {
+	case SessionStatusAllowed:
+		return SessionStatusAllowedRus
+	case SessionStatusExpired:
+		return SessionStatusExpiredRus
+	case SessionStatusRevoked:
+		return SessionStatusRevokedRus
+	}
+	return ""
 }

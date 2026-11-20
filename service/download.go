@@ -22,32 +22,38 @@ const (
 	notFoundSymbol = "-"
 )
 
-type AdminRepo interface {
-	GetAudit(ctx context.Context, req domain.AuditDownloadRequest) (*entity.AuditResponse, error)
-	GetSessions(ctx context.Context, req domain.SessionDownloadRequest) (*entity.SessionResponse, error)
-	GetUsers(ctx context.Context, req domain.UsersDownloadRequest) ([]entity.User, error)
-	GetRoles(ctx context.Context) ([]entity.Role, error)
-	GetPermissions(ctx context.Context) ([]entity.Permission, error)
-}
-
 type Download struct {
-	repo AdminRepo
-	loc  *time.Location
+	auditService      Audit
+	userService       User
+	tokenService      Token
+	roleService       Role
+	permissionService Permission
+	loc               *time.Location
 }
 
-func NewDownload(repo AdminRepo) Download {
+func NewDownload(
+	auditService Audit,
+	userService User,
+	tokenService Token,
+	roleService Role,
+	permissionService Permission,
+) Download {
 	loc, _ := time.LoadLocation("Europe/Moscow")
 	return Download{
-		repo: repo,
-		loc:  loc,
+		auditService:      auditService,
+		userService:       userService,
+		tokenService:      tokenService,
+		roleService:       roleService,
+		permissionService: permissionService,
+		loc:               loc,
 	}
 }
 
-func (s Download) DownloadAudit(ctx context.Context, req domain.AuditDownloadRequest, w http.ResponseWriter) error {
+func (s Download) DownloadAudit(ctx context.Context, req domain.AuditPageRequest, w http.ResponseWriter) error {
 	req.Limit = requestLimit
 	req.Offset = 0
 
-	response, err := s.repo.GetAudit(ctx, req)
+	response, err := s.auditService.All(ctx, req)
 	if err != nil {
 		return errors.WithMessage(err, "get audit")
 	}
@@ -90,7 +96,7 @@ func (s Download) DownloadAudit(ctx context.Context, req domain.AuditDownloadReq
 		}
 
 		req.Offset += requestLimit
-		response, err = s.repo.GetAudit(ctx, req)
+		response, err = s.auditService.All(ctx, req)
 		if err != nil {
 			return errors.WithMessage(err, "get audit")
 		}
@@ -101,11 +107,11 @@ func (s Download) DownloadAudit(ctx context.Context, req domain.AuditDownloadReq
 	return nil
 }
 
-func (s Download) DownloadSessions(ctx context.Context, req domain.SessionDownloadRequest, w http.ResponseWriter) error {
+func (s Download) DownloadSessions(ctx context.Context, req domain.SessionPageRequest, w http.ResponseWriter) error {
 	req.Limit = requestLimit
 	req.Offset = 0
 
-	response, err := s.repo.GetSessions(ctx, req)
+	response, err := s.tokenService.All(ctx, req)
 	if err != nil {
 		return errors.WithMessage(err, "get sessions")
 	}
@@ -152,7 +158,7 @@ func (s Download) DownloadSessions(ctx context.Context, req domain.SessionDownlo
 		}
 
 		req.Offset += requestLimit
-		response, err = s.repo.GetSessions(ctx, req)
+		response, err = s.tokenService.All(ctx, req)
 		if err != nil {
 			return errors.WithMessage(err, "get sessions")
 		}
@@ -163,21 +169,21 @@ func (s Download) DownloadSessions(ctx context.Context, req domain.SessionDownlo
 	return nil
 }
 
-func (s Download) DownloadUsers(ctx context.Context, req domain.UsersDownloadRequest, w http.ResponseWriter) error {
+func (s Download) DownloadUsers(ctx context.Context, req domain.UsersPageRequest, w http.ResponseWriter) error {
 	req.Limit = requestLimit
 	req.Offset = 0
 
-	users, err := s.repo.GetUsers(ctx, req)
+	users, err := s.userService.GetUsers(ctx, req)
 	if err != nil {
 		return errors.WithMessage(err, "get users")
 	}
 
-	roles, err := s.repo.GetRoles(ctx)
+	roles, err := s.roleService.All(ctx)
 	if err != nil {
 		return errors.WithMessage(err, "get roles")
 	}
 
-	if len(users) == 0 {
+	if len(users.Items) == 0 {
 		return nil
 	}
 
@@ -193,7 +199,7 @@ func (s Download) DownloadUsers(ctx context.Context, req domain.UsersDownloadReq
 		return errors.WithMessage(err, "write userColumns to csv")
 	}
 
-	for _, user := range users {
+	for _, user := range users.Items {
 		row := []string{strconv.Itoa(int(user.Id)),
 			user.FullName,
 			user.Description,
@@ -211,15 +217,12 @@ func (s Download) DownloadUsers(ctx context.Context, req domain.UsersDownloadReq
 }
 
 func (s Download) DownloadRoles(ctx context.Context, w http.ResponseWriter) error {
-	roles, err := s.repo.GetRoles(ctx)
+	roles, err := s.roleService.All(ctx)
 	if err != nil {
 		return errors.WithMessage(err, "get roles")
 	}
 
-	perms, err := s.repo.GetPermissions(ctx)
-	if err != nil {
-		return errors.WithMessage(err, "get permissions")
-	}
+	perms := s.permissionService.All(ctx)
 
 	if len(perms) == 0 {
 		return nil
@@ -262,24 +265,21 @@ func (s Download) DownloadRoles(ctx context.Context, w http.ResponseWriter) erro
 	return nil
 }
 
-func (s Download) getUsersList(ctx context.Context) (map[int]entity.User, error) {
-	users, err := s.repo.GetUsers(ctx, domain.UsersDownloadRequest{
-		Limit:  requestLimit,
-		Offset: 0,
-	})
+func (s Download) getUsersList(ctx context.Context) (map[int]domain.User, error) {
+	users, err := s.userService.GetAllUsers(ctx)
 	if err != nil {
 		return nil, errors.WithMessage(err, "get users")
 	}
 
-	userById := make(map[int]entity.User)
-	for _, user := range users {
+	userById := make(map[int]domain.User)
+	for _, user := range users.Items {
 		userById[int(user.Id)] = user
 	}
 
 	return userById, nil
 }
 
-func getUsername(userById map[int]entity.User, userId int) string {
+func getUsername(userById map[int]domain.User, userId int) string {
 	user, ok := userById[userId]
 	if !ok {
 		return ""
@@ -288,7 +288,7 @@ func getUsername(userById map[int]entity.User, userId int) string {
 	return user.FullName
 }
 
-func getRoleNamesByIds(roles []entity.Role, roleIds []int) string {
+func getRoleNamesByIds(roles []domain.Role, roleIds []int) string {
 	names := make([]string, 0)
 	for _, role := range roles {
 		if slices.Contains(roleIds, role.Id) {

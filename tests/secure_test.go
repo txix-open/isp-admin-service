@@ -39,7 +39,7 @@ func (s *SecureSuite) SetupTest() {
 	remote := conf.Remote{
 		ExpireSec: 3600,
 	}
-	cfg, err := assembly.NewLocator(s.test.Logger(), httpCli, nil, s.db).
+	cfg, err := assembly.NewLocator(s.test.Logger(), httpCli, s.db).
 		Config(s.T().Context(), remote, time.Minute)
 	s.Require().NoError(err)
 

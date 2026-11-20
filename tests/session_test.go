@@ -70,7 +70,7 @@ func (s *SessionSuite) SetupTest() {
 			AuditTTl: conf.AuditTTlSetting{},
 		},
 	}
-	config, err := assembly.NewLocator(testInstance.Logger(), httpcli.New(), nil, s.db).
+	config, err := assembly.NewLocator(testInstance.Logger(), httpcli.New(), s.db).
 		Config(s.T().Context(), remote, 500*time.Millisecond)
 	s.Require().NoError(err)
 

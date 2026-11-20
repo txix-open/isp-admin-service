@@ -223,7 +223,6 @@
         },
         "/log/all": {
             "post": {
-                "description": "`errorCode: 400` - если тело запроса невалидно",
                 "consumes": [
                     "application/json"
                 ],
@@ -293,7 +292,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/domain.AuditDownloadRequest"
+                            "$ref": "#/definitions/domain.AuditPageRequest"
                         }
                     }
                 ],
@@ -808,7 +807,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/domain.SessionDownloadRequest"
+                            "$ref": "#/definitions/domain.SessionPageRequest"
                         }
                     }
                 ],
@@ -1155,7 +1154,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/domain.UsersDownloadRequest"
+                            "$ref": "#/definitions/domain.UsersPageRequest"
                         }
                     }
                 ],
@@ -1593,29 +1592,6 @@
                 "userId": {
                     "description": "Идентификатор пользователя",
                     "type": "integer"
-                }
-            }
-        },
-        "domain.AuditDownloadRequest": {
-            "type": "object",
-            "required": [
-                "limit"
-            ],
-            "properties": {
-                "limit": {
-                    "description": "Максимальное количество записей",
-                    "type": "integer"
-                },
-                "offset": {
-                    "description": "Отступ для выборки",
-                    "type": "integer",
-                    "format": "int64"
-                },
-                "order": {
-                    "$ref": "#/definitions/domain.OrderParams"
-                },
-                "query": {
-                    "$ref": "#/definitions/domain.AuditQuery"
                 }
             }
         },
@@ -2098,29 +2074,6 @@
                 }
             }
         },
-        "domain.SessionDownloadRequest": {
-            "type": "object",
-            "required": [
-                "limit"
-            ],
-            "properties": {
-                "limit": {
-                    "description": "Максимальное количество записей",
-                    "type": "integer"
-                },
-                "offset": {
-                    "description": "Отступ для выборки",
-                    "type": "integer",
-                    "format": "int64"
-                },
-                "order": {
-                    "$ref": "#/definitions/domain.OrderParams"
-                },
-                "query": {
-                    "$ref": "#/definitions/domain.SessionQuery"
-                }
-            }
-        },
         "domain.SessionPageRequest": {
             "type": "object",
             "required": [
@@ -2409,29 +2362,6 @@
                     "items": {
                         "type": "integer"
                     }
-                }
-            }
-        },
-        "domain.UsersDownloadRequest": {
-            "type": "object",
-            "required": [
-                "limit"
-            ],
-            "properties": {
-                "limit": {
-                    "description": "Максимальное количество записей",
-                    "type": "integer"
-                },
-                "offset": {
-                    "description": "Отступ для выборки",
-                    "type": "integer",
-                    "format": "int64"
-                },
-                "order": {
-                    "$ref": "#/definitions/domain.OrderParams"
-                },
-                "query": {
-                    "$ref": "#/definitions/domain.UserQuery"
                 }
             }
         },

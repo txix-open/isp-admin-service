@@ -40,7 +40,7 @@ func (s *CustomizationTestSuite) SetupTest() {
 		},
 		ExpireSec: 0,
 	}
-	cfg, err := assembly.NewLocator(testInstance.Logger(), nil, nil, s.db).
+	cfg, err := assembly.NewLocator(testInstance.Logger(), nil, s.db).
 		Config(s.T().Context(), remote, time.Minute)
 	s.Require().NoError(err)
 

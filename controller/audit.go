@@ -29,7 +29,6 @@ func NewAudit(service AuditService) Audit {
 // All
 // @Tags log
 // @Summary Получение списка логов
-// @Description `errorCode: 400` - если тело запроса невалидно
 // @Accept json
 // @Produce json
 // @Param X-AUTH-ADMIN header string true "Токен администратора"

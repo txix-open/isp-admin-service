@@ -74,7 +74,7 @@ func (s *AuthTestSuite) SetupTest() {
 		},
 	}
 
-	cfg, err := assembly.NewLocator(testInstance.Logger(), s.oauthCli, httpcli.New(), s.db).
+	cfg, err := assembly.NewLocator(testInstance.Logger(), s.oauthCli, s.db).
 		Config(s.T().Context(), remote, time.Minute)
 	s.Require().NoError(err)
 

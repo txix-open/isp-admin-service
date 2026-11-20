@@ -49,7 +49,7 @@ func (s *UiSettingsSuite) SetupTest() {
 			Clients: []conf.OauthClientConfig{s.oauthClientSetting},
 		},
 	}
-	cfg, err := assembly.NewLocator(s.test.Logger(), nil, nil, nil).
+	cfg, err := assembly.NewLocator(s.test.Logger(), nil, nil).
 		Config(s.T().Context(), remote, 0)
 	s.Require().NoError(err)
 

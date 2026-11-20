@@ -68,7 +68,7 @@ func (s *AuditSuite) SetupTest() {
 			AuditTTl: conf.AuditTTlSetting{},
 		},
 	}
-	cfg, err := assembly.NewLocator(testInstance.Logger(), httpcli.New(), httpcli.New(), s.db).
+	cfg, err := assembly.NewLocator(testInstance.Logger(), httpcli.New(), s.db).
 		Config(s.T().Context(), remote, time.Minute)
 	s.Require().NoError(err)
 	s.insertAuditLogs()
@@ -178,7 +178,7 @@ func (s *AuditSuite) Test_SetEvents_InvalidEvent() {
 
 	var httpErr httpcli.ErrorResponse
 	s.Require().ErrorAs(err, &httpErr)
-	s.Require().Equal(http.StatusBadRequest, httpErr.StatusCode) // не уверен тут какой код проверять? Статус или внутренний? Коммент чтобы не забыть
+	s.Require().Equal(http.StatusBadRequest, httpErr.StatusCode)
 }
 
 func (s *AuditSuite) Test_All_Logs() {

@@ -3,7 +3,6 @@ package tests_test
 
 import (
 	"encoding/csv"
-	"encoding/json"
 	"net/http"
 	"testing"
 	"time"
@@ -12,6 +11,7 @@ import (
 	"isp-admin-service/conf"
 	"isp-admin-service/domain"
 	"isp-admin-service/entity"
+	"isp-admin-service/repository"
 
 	"github.com/stretchr/testify/suite"
 
@@ -33,7 +33,6 @@ type DownloadSuite struct {
 	test        *test.Test
 	db          *dbt.TestDb
 	httpCli     *httpcli.Client
-	downloadCli *httpcli.Client
 	permissions entity.PermList
 }
 
@@ -50,8 +49,7 @@ func (s *DownloadSuite) SetupTest() {
 			},
 		},
 	}
-	s.initMockDownload()
-	cfg, err := assembly.NewLocator(testInstance.Logger(), nil, s.downloadCli, s.db).
+	cfg, err := assembly.NewLocator(testInstance.Logger(), nil, s.db).
 		Config(s.T().Context(), remote, time.Minute)
 	s.Require().NoError(err)
 
@@ -79,8 +77,13 @@ func (s *DownloadSuite) TestUsersHappyPath() {
 	InsertUserRole(s.db, entity.UserRole{RoleId: int(roleId), UserId: int(id1)})
 
 	resp, err := s.httpCli.Post("user/download").
-		JsonRequestBody(domain.UsersDownloadRequest{
-			Limit: 1000, Offset: 0,
+		JsonRequestBody(domain.UsersPageRequest{
+			Limit:  1000,
+			Offset: 0,
+			Order: &domain.OrderParams{
+				Field: "id",
+				Type:  "desc",
+			},
 		}).
 		Do(s.T().Context())
 	s.Require().NoError(err)
@@ -104,22 +107,53 @@ func (s *DownloadSuite) TestUsersHappyPath() {
 	fullNameIdx, ok := col["Пользователь"]
 	s.Require().True(ok)
 
-	s.Require().Len(records, 2)
+	s.Require().Len(records, 4)
 
 	row := records[1]
-	s.Require().EqualValues("1", row[idIdx])
+	s.Require().EqualValues("3", row[idIdx])
 	s.Require().EqualValues("alice@a.ru", row[emailIdx])
 	s.Require().EqualValues("Bob Alice", row[fullNameIdx])
 }
 
 func (s *DownloadSuite) TestSessionsHappyPath() {
-	id1 := InsertUser(s.db, entity.User{Email: "sess1@a.ru"})
+	timeNow := time.Now().UTC()
+	userId := InsertUser(s.db, entity.User{Email: "sess1@a.ru", FullName: "Bob Alice"})
 	roleId := InsertRole(s.db, entity.Role{Name: "admin", Permissions: s.permissions})
-	InsertUserRole(s.db, entity.UserRole{RoleId: int(roleId), UserId: int(id1)})
+	InsertUserRole(s.db, entity.UserRole{RoleId: int(roleId), UserId: int(userId)})
+
+	InsertTokenEntity(s.db, entity.Token{
+		Token:     "test_token_1",
+		UserId:    userId,
+		Status:    entity.TokenStatusAllowed,
+		ExpiredAt: timeNow.Add(1 * time.Hour),
+		CreatedAt: timeNow.Add(-1 * time.Hour),
+		UpdatedAt: timeNow,
+	})
+	InsertTokenEntity(s.db, entity.Token{
+		Token:     "test_token_2",
+		UserId:    userId,
+		Status:    entity.TokenStatusRevoked,
+		ExpiredAt: timeNow.Add(1 * time.Hour),
+		CreatedAt: timeNow.Add(-2 * time.Hour),
+		UpdatedAt: timeNow,
+	})
+	InsertTokenEntity(s.db, entity.Token{
+		Token:     "test_token_3",
+		UserId:    userId,
+		Status:    entity.TokenStatusExpired,
+		ExpiredAt: timeNow.Add(-1 * time.Hour),
+		CreatedAt: timeNow.Add(-3 * time.Hour),
+		UpdatedAt: timeNow,
+	})
 
 	resp, err := s.httpCli.Post("/session/download").
-		JsonRequestBody(domain.SessionDownloadRequest{
-			Limit: 1000, Offset: 0,
+		JsonRequestBody(domain.SessionPageRequest{
+			Limit:  1000,
+			Offset: 0,
+			Order: &domain.OrderParams{
+				Field: "user_id",
+				Type:  "desc",
+			},
 		}).
 		Do(s.T().Context())
 	s.Require().NoError(err)
@@ -141,20 +175,36 @@ func (s *DownloadSuite) TestSessionsHappyPath() {
 	idIdx, ok := col["Идентификатор"]
 	s.Require().True(ok)
 
-	s.Require().Len(records, 2)
+	s.Require().Len(records, 4)
 	row := records[1]
 	s.Require().EqualValues("Bob Alice", row[userIdx])
 	s.Require().EqualValues("1", row[idIdx])
 }
 
 func (s *DownloadSuite) TestAuditHappyPath() {
-	id1 := InsertUser(s.db, entity.User{Email: "audit1@a.ru"})
+	timeNow := time.Now().UTC()
+	userId := InsertUser(s.db, entity.User{Email: "audit1@a.ru", FullName: "Bob Alice"})
 	roleId := InsertRole(s.db, entity.Role{Name: "admin", Permissions: s.permissions})
-	InsertUserRole(s.db, entity.UserRole{RoleId: int(roleId), UserId: int(id1)})
+	InsertUserRole(s.db, entity.UserRole{RoleId: int(roleId), UserId: int(userId)})
+
+	auditRepo := repository.NewAudit(s.db)
+	_, err := auditRepo.Insert(s.T().Context(), entity.Audit{
+		Id:        1,
+		UserId:    int(userId),
+		Message:   "audit1@a.ru",
+		Event:     "123456",
+		CreatedAt: timeNow,
+	})
+	s.Require().NoError(err)
 
 	resp, err := s.httpCli.Post("log/download").
-		JsonRequestBody(domain.AuditDownloadRequest{
-			Limit: 1000, Offset: 0,
+		JsonRequestBody(domain.AuditPageRequest{
+			Limit:  1000,
+			Offset: 0,
+			Order: &domain.OrderParams{
+				Field: "user_id",
+				Type:  "desc",
+			},
 		}).
 		StatusCodeToError().
 		Do(s.T().Context())
@@ -172,7 +222,7 @@ func (s *DownloadSuite) TestAuditHappyPath() {
 
 	idIdx, ok := col["Пользователь"]
 	s.Require().True(ok)
-	moveIdx, ok := col["Действие"] // уточнить
+	moveIdx, ok := col["Действие"]
 	s.Require().True(ok)
 
 	s.Require().Len(records, 2)
@@ -182,99 +232,12 @@ func (s *DownloadSuite) TestAuditHappyPath() {
 }
 
 func (s *DownloadSuite) TestRolesHappyPath() {
-	err := s.httpCli.Post("role/download").
+	resp, err := s.httpCli.Post("role/download").
 		StatusCodeToError().
-		DoWithoutResponse(s.T().Context())
+		Do(s.T().Context())
 	s.Require().NoError(err)
-}
 
-func (s *DownloadSuite) initMockDownload() {
-	mocksrv := httpt.NewMock(s.test)
-	mocksrv.POST("/user/download", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"Items": []domain.User{{Id: 0, FullName: "Bob Alice", Email: "alice@a.ru"}},
-		})
-	})
-	mocksrv.POST("/session/download", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"Items": []domain.User{{Id: 0, FullName: "Sess1", Email: "sess1@a.ru"}},
-		})
-	})
-	mocksrv.POST("/log/download", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"TotalCount": 1,
-			"Items":      []domain.Audit{{Id: 0, UserId: 0, Message: "audit1@a.ru"}},
-		})
-	})
-	mocksrv.POST("/role/download", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"Items": []domain.User{{Id: 0, Roles: []int{0}, Email: "admin@a.ru"}},
-		})
-	})
-
-	mocksrv.POST("/admin/user/get_users", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"Items": []domain.User{{
-				Id:       1,
-				FullName: "Bob Alice",
-				Email:    "alice@a.ru",
-			}},
-			"TotalCount": 1,
-		})
-	})
-
-	mocksrv.POST("/admin/user/get_permissions", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode([]domain.Permission{{
-			Key:  "data_download",
-			Name: "123",
-		}})
-	})
-
-	mocksrv.POST("/admin/session/all", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"Items": []domain.Session{{
-				Id:     1,
-				UserId: 1,
-			}},
-			"TotalCount": 1,
-		})
-	})
-
-	mocksrv.POST("/admin/log/all", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"Items": []domain.Audit{{
-				Id:      1,
-				UserId:  1,
-				Message: "audit1@a.ru",
-			}},
-			"TotalCount": 1,
-		})
-	})
-
-	mocksrv.POST("/admin/role/all", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode([]domain.Role{{
-			Id:   1,
-			Name: "admin",
-		}})
-	})
-
-	s.downloadCli = mocksrv.Client()
+	records, err := csv.NewReader(resp.Raw.Body).ReadAll()
+	s.Require().NoError(err)
+	s.Require().NotEmpty(records)
 }

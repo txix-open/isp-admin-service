@@ -24,13 +24,12 @@ import (
 )
 
 type Assembly struct {
-	boot        *bootstrap.Bootstrap
-	db          *dbrx.Client
-	server      *http.Server
-	downloadCli *httpcli.Client
-	oauthCli    *httpcli.Client
-	logger      *log.Adapter
-	bgjobCli    *bgjobx.Client
+	boot     *bootstrap.Bootstrap
+	db       *dbrx.Client
+	server   *http.Server
+	oauthCli *httpcli.Client
+	logger   *log.Adapter
+	bgjobCli *bgjobx.Client
 }
 
 func New(boot *bootstrap.Bootstrap) (*Assembly, error) {
@@ -74,7 +73,7 @@ func (a *Assembly) ReceiveConfig(ctx context.Context, remoteConfig []byte) error
 	}
 	a.oauthCli.GlobalRequestConfig().BaseUrl = oauthBaseUrl
 
-	locator := NewLocator(a.logger, a.oauthCli, a.downloadCli, a.db)
+	locator := NewLocator(a.logger, a.oauthCli, a.db)
 	config, err := locator.Config(ctx, newCfg, time.Minute)
 	if err != nil {
 		a.logger.Fatal(ctx, errors.WithMessage(err, "locator config"))
