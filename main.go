@@ -12,14 +12,14 @@ import (
 
 var version = "1.0.0"
 
-// @title isp-admin-service
-// @version 1.0.0
-// @description сервис управления администраторами
+//	@title			isp-admin-service
+//	@version		1.0.0
+//	@description	сервис управления администраторами
 
-// @license.name GNU GPL v3.0
+//	@license.name	GNU GPL v3.0
 
-// @host localhost:9000
-// @BasePath /api/admin
+//	@host		localhost:9000
+//	@BasePath	/api/admin
 
 //go:generate swag init -pd -ot json -eot json
 func main() {

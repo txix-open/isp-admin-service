@@ -11,12 +11,12 @@ type Permission struct {
 	permissions []domain.Permission
 }
 
-func NewPermission(permissions []conf.Permission) *Permission {
-	return &Permission{
+func NewPermission(permissions []conf.Permission) Permission {
+	return Permission{
 		permissions: toDomain(permissions),
 	}
 }
-func (s *Permission) All(_ context.Context) []domain.Permission {
+func (s Permission) All(_ context.Context) []domain.Permission {
 	return s.permissions
 }
 

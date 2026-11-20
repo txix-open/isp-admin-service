@@ -34,17 +34,18 @@ func NewUser(userService userService) User {
 }
 
 // GetProfile
-// @Tags user
-// @Summary Получить профиль
-// @Description Получить данные профиля
-// @Accept json
-// @Produce json
-// @Param X-AUTH-ADMIN header string true "Токен администратора"
-// @Success 200 {object} domain.AdminUserShort
-// @Failure 401 {object} apierrors.Error "Невалидный токен"
-// @Failure 404 {object} apierrors.Error "Пользователя не существует"
-// @Failure 500 {object} apierrors.Error
-// @Router /user/get_profile [POST]
+//
+//	@Tags			user
+//	@Summary		Получить профиль
+//	@Description	Получить данные профиля
+//	@Accept			json
+//	@Produce		json
+//	@Param			X-AUTH-ADMIN	header		string	true	"Токен администратора"
+//	@Success		200				{object}	domain.AdminUserShort
+//	@Failure		401				{object}	apierrors.Error	"Невалидный токен"
+//	@Failure		404				{object}	apierrors.Error	"Пользователя не существует"
+//	@Failure		500				{object}	apierrors.Error
+//	@Router			/user/get_profile [POST]
 func (u User) GetProfile(ctx context.Context, r *http.Request) (*domain.AdminUserShort, error) {
 	adminId, err := getAdminId(r)
 	if err != nil {
@@ -65,17 +66,18 @@ func (u User) GetProfile(ctx context.Context, r *http.Request) (*domain.AdminUse
 }
 
 // GetUsers
-// @Tags user
-// @Summary Список пользователей
-// @Description Получить список пользователей
-// @Accept json
-// @Produce json
-// @Param X-AUTH-ADMIN header string true "Токен администратора"
-// @Param body body domain.UsersPageRequest true "Тело запроса"
-// @Success 200 {object} domain.UsersResponse
-// @Failure 400 {object} apierrors.Error
-// @Failure 500 {object} apierrors.Error
-// @Router /user/get_users [POST]
+//
+//	@Tags			user
+//	@Summary		Список пользователей
+//	@Description	Получить список пользователей
+//	@Accept			json
+//	@Produce		json
+//	@Param			X-AUTH-ADMIN	header		string					true	"Токен администратора"
+//	@Param			body			body		domain.UsersPageRequest	true	"Тело запроса"
+//	@Success		200				{object}	domain.UsersResponse
+//	@Failure		400				{object}	apierrors.Error
+//	@Failure		500				{object}	apierrors.Error
+//	@Router			/user/get_users [POST]
 func (u User) GetUsers(ctx context.Context, req domain.UsersPageRequest) (*domain.UsersResponse, error) {
 	if req.Order == nil {
 		req.Order = &domain.OrderParams{
@@ -93,16 +95,17 @@ func (u User) GetUsers(ctx context.Context, req domain.UsersPageRequest) (*domai
 }
 
 // GetAllUsers
-// @Tags user
-// @Summary Список пользователей
-// @Description Получить список пользователей
-// @Accept json
-// @Produce json
-// @Param X-AUTH-ADMIN header string true "Токен администратора"
-// @Success 200 {object} domain.UsersResponse
-// @Failure 400 {object} apierrors.Error
-// @Failure 500 {object} apierrors.Error
-// @Router /user/get_all_users [POST]
+//
+//	@Tags			user
+//	@Summary		Список пользователей
+//	@Description	Получить список пользователей
+//	@Accept			json
+//	@Produce		json
+//	@Param			X-AUTH-ADMIN	header		string	true	"Токен администратора"
+//	@Success		200				{object}	domain.UsersResponse
+//	@Failure		400				{object}	apierrors.Error
+//	@Failure		500				{object}	apierrors.Error
+//	@Router			/user/get_all_users [POST]
 func (u User) GetAllUsers(ctx context.Context) (*domain.UsersResponse, error) {
 	users, err := u.userService.GetAllUsers(ctx)
 	if err != nil {
@@ -113,18 +116,19 @@ func (u User) GetAllUsers(ctx context.Context) (*domain.UsersResponse, error) {
 }
 
 // CreateUser
-// @Tags user
-// @Summary Создать пользователя
-// @Description Создать пользователя
-// @Accept json
-// @Produce json
-// @Param X-AUTH-ADMIN header string true "Токен администратора"
-// @Param body body domain.CreateUserRequest true "Тело запроса"
-// @Success 200 {object} domain.User
-// @Failure 400 {object} apierrors.Error "Невалидное тело запроса"
-// @Failure 409 {object} apierrors.Error "Пользователь с указанным email уже существует"
-// @Failure 500 {object} apierrors.Error
-// @Router /user/create_user [POST]
+//
+//	@Tags			user
+//	@Summary		Создать пользователя
+//	@Description	Создать пользователя
+//	@Accept			json
+//	@Produce		json
+//	@Param			X-AUTH-ADMIN	header		string						true	"Токен администратора"
+//	@Param			body			body		domain.CreateUserRequest	true	"Тело запроса"
+//	@Success		200				{object}	domain.User
+//	@Failure		400				{object}	apierrors.Error	"Невалидное тело запроса"
+//	@Failure		409				{object}	apierrors.Error	"Пользователь с указанным email уже существует"
+//	@Failure		500				{object}	apierrors.Error
+//	@Router			/user/create_user [POST]
 func (u User) CreateUser(ctx context.Context, req domain.CreateUserRequest, r *http.Request) (*domain.User, error) {
 	adminId, err := getAdminId(r)
 	if err != nil {
@@ -143,19 +147,20 @@ func (u User) CreateUser(ctx context.Context, req domain.CreateUserRequest, r *h
 }
 
 // UpdateUser
-// @Tags user
-// @Summary Обновить пользователя
-// @Description Обновить данные существующего пользователя
-// @Accept json
-// @Produce json
-// @Param X-AUTH-ADMIN header string true "Токен администратора"
-// @Param body body domain.UpdateUserRequest true "Тело запроса"
-// @Success 200 {object} domain.User
-// @Failure 400 {object} apierrors.Error "Невалидное тело запроса"
-// @Failure 404 {object} apierrors.Error "Пользователь с указанным id не существует"
-// @Failure 409 {object} apierrors.Error "Пользователь с указанным email уже существует"
-// @Failure 500 {object} apierrors.Error
-// @Router /user/update_user [POST]
+//
+//	@Tags			user
+//	@Summary		Обновить пользователя
+//	@Description	Обновить данные существующего пользователя
+//	@Accept			json
+//	@Produce		json
+//	@Param			X-AUTH-ADMIN	header		string						true	"Токен администратора"
+//	@Param			body			body		domain.UpdateUserRequest	true	"Тело запроса"
+//	@Success		200				{object}	domain.User
+//	@Failure		400				{object}	apierrors.Error	"Невалидное тело запроса"
+//	@Failure		404				{object}	apierrors.Error	"Пользователь с указанным id не существует"
+//	@Failure		409				{object}	apierrors.Error	"Пользователь с указанным email уже существует"
+//	@Failure		500				{object}	apierrors.Error
+//	@Router			/user/update_user [POST]
 func (u User) UpdateUser(ctx context.Context, req domain.UpdateUserRequest, r *http.Request) (*domain.User, error) {
 	adminId, err := getAdminId(r)
 	if err != nil {
@@ -178,17 +183,18 @@ func (u User) UpdateUser(ctx context.Context, req domain.UpdateUserRequest, r *h
 }
 
 // DeleteUser
-// @Tags user
-// @Summary Удалить пользователя
-// @Description Удалить существующего пользователя
-// @Accept json
-// @Produce json
-// @Param X-AUTH-ADMIN header string true "Токен администратора"
-// @Param body body domain.IdentitiesRequest true "Тело запроса"
-// @Success 200 {object} domain.DeleteResponse
-// @Failure 400 {object} apierrors.Error "Невалидное тело запроса"
-// @Failure 500 {object} apierrors.Error
-// @Router /user/delete_user [POST]
+//
+//	@Tags			user
+//	@Summary		Удалить пользователя
+//	@Description	Удалить существующего пользователя
+//	@Accept			json
+//	@Produce		json
+//	@Param			X-AUTH-ADMIN	header		string						true	"Токен администратора"
+//	@Param			body			body		domain.IdentitiesRequest	true	"Тело запроса"
+//	@Success		200				{object}	domain.DeleteResponse
+//	@Failure		400				{object}	apierrors.Error	"Невалидное тело запроса"
+//	@Failure		500				{object}	apierrors.Error
+//	@Router			/user/delete_user [POST]
 func (u User) DeleteUser(ctx context.Context, identities domain.IdentitiesRequest, r *http.Request) (*domain.DeleteResponse, error) {
 	adminId, err := getAdminId(r)
 	if err != nil {
@@ -204,16 +210,17 @@ func (u User) DeleteUser(ctx context.Context, identities domain.IdentitiesReques
 }
 
 // Block
-// @Tags user
-// @Summary Метод блокировки/разблокировки пользователя
-// @Accept json
-// @Produce json
-// @Param X-AUTH-ADMIN header string true "Токен администратора"
-// @Param body body domain.IdRequest true "Тело запроса"
-// @Success 200
-// @Failure 400 {object} apierrors.Error "Невалидное тело запроса"
-// @Failure 500 {object} apierrors.Error
-// @Router /user/block_user [POST]
+//
+//	@Tags		user
+//	@Summary	Метод блокировки/разблокировки пользователя
+//	@Accept		json
+//	@Produce	json
+//	@Param		X-AUTH-ADMIN	header	string				true	"Токен администратора"
+//	@Param		body			body	domain.IdRequest	true	"Тело запроса"
+//	@Success	200
+//	@Failure	400	{object}	apierrors.Error	"Невалидное тело запроса"
+//	@Failure	500	{object}	apierrors.Error
+//	@Router		/user/block_user [POST]
 func (u User) Block(ctx context.Context, identities domain.IdRequest, r *http.Request) error {
 	adminId, err := getAdminId(r)
 	if err != nil {
@@ -228,30 +235,32 @@ func (u User) Block(ctx context.Context, identities domain.IdRequest, r *http.Re
 }
 
 // GetById
-// @Tags user
-// @Summary Метод получения данных по пользователю
-// @Accept json
-// @Produce json
-// @Param body body domain.IdRequest true "Тело запроса"
-// @Success 200 {object} domain.User
-// @Failure 400 {object} apierrors.Error "Невалидное тело запроса"
-// @Failure 500 {object} apierrors.Error
-// @Router /user/get_by_id [POST]
+//
+//	@Tags		user
+//	@Summary	Метод получения данных по пользователю
+//	@Accept		json
+//	@Produce	json
+//	@Param		body	body		domain.IdRequest	true	"Тело запроса"
+//	@Success	200		{object}	domain.User
+//	@Failure	400		{object}	apierrors.Error	"Невалидное тело запроса"
+//	@Failure	500		{object}	apierrors.Error
+//	@Router		/user/get_by_id [POST]
 func (u User) GetById(ctx context.Context, identities domain.IdRequest) (*domain.User, error) {
 	return u.userService.GetById(ctx, identities.UserId)
 }
 
 // ChangePassword
-// @Tags user
-// @Summary Метод изменения пароля пользователя
-// @Accept json
-// @Produce json
-// @Param X-AUTH-ADMIN header string true "Токен администратора"
-// @Param body body domain.ChangePasswordRequest true "Тело запроса"
-// @Success 200
-// @Failure 400 {object} apierrors.Error "Невалидное тело запроса или неверный старый пароль"
-// @Failure 500 {object} apierrors.Error "Внутренняя ошибка"
-// @Router /user/change_password [POST]
+//
+//	@Tags		user
+//	@Summary	Метод изменения пароля пользователя
+//	@Accept		json
+//	@Produce	json
+//	@Param		X-AUTH-ADMIN	header	string							true	"Токен администратора"
+//	@Param		body			body	domain.ChangePasswordRequest	true	"Тело запроса"
+//	@Success	200
+//	@Failure	400	{object}	apierrors.Error	"Невалидное тело запроса или неверный старый пароль"
+//	@Failure	500	{object}	apierrors.Error	"Внутренняя ошибка"
+//	@Router		/user/change_password [POST]
 func (u User) ChangePassword(ctx context.Context, req domain.ChangePasswordRequest, r *http.Request) error {
 	adminId, err := getAdminId(r)
 	if err != nil {

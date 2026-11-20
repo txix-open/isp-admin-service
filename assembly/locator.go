@@ -103,7 +103,7 @@ func (l Locator) Config(
 		userService,
 		tokenService,
 		roleService,
-		*permissionsService,
+		permissionsService,
 	)
 
 	userController := controller.NewUser(userService)

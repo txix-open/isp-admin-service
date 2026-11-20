@@ -279,7 +279,7 @@
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "text/csv"
                 ],
                 "tags": [
                     "Download"
@@ -578,7 +578,7 @@
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "text/csv"
                 ],
                 "tags": [
                     "Download"
@@ -794,7 +794,7 @@
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "text/csv"
                 ],
                 "tags": [
                     "Download"
@@ -1141,7 +1141,7 @@
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "text/csv"
                 ],
                 "tags": [
                     "Download"

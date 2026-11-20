@@ -28,19 +28,19 @@ func NewRole(roleService roleService) Role {
 }
 
 // All
-// @Tags role
-// @Summary Список ролей
-// @Description Получить список ролей
-// @Accept json
-// @Produce json
-// @Param X-AUTH-ADMIN header string true "Токен администратора"
-// @Param body body domain.RoleAllRequest true "Тело запроса"
-// @Success 200 {array} domain.Role
-// @Failure 400 {object} apierrors.Error
-// @Failure 500 {object} apierrors.Error
-// @Router /role/all [POST]
-func (u Role) All(ctx context.Context, req domain.RoleAllRequest) ([]domain.Role, error) {
-	users, err := u.roleService.All(ctx, req)
+//
+//	@Tags			role
+//	@Summary		Список ролей
+//	@Description	Получить список ролей
+//	@Accept			json
+//	@Produce		json
+//	@Param			X-AUTH-ADMIN	header		string	true	"Токен администратора"
+//	@Success		200				{array}		domain.Role
+//	@Failure		400				{object}	apierrors.Error
+//	@Failure		500				{object}	apierrors.Error
+//	@Router			/role/all [POST]
+func (u Role) All(ctx context.Context) ([]domain.Role, error) {
+	users, err := u.roleService.All(ctx)
 	if err != nil {
 		return nil, errors.WithMessage(err, "get roles")
 	}
@@ -49,18 +49,19 @@ func (u Role) All(ctx context.Context, req domain.RoleAllRequest) ([]domain.Role
 }
 
 // CreateRole
-// @Tags role
-// @Summary Создать роль
-// @Description Создать роль
-// @Accept json
-// @Produce json
-// @Param X-AUTH-ADMIN header string true "Токен администратора"
-// @Param body body domain.CreateRoleRequest true "Тело запроса"
-// @Success 200 {object} domain.Role
-// @Failure 400 {object} apierrors.Error "Невалидное тело запроса"
-// @Failure 409 {object} apierrors.Error "Роль с указанным именем уже существует"
-// @Failure 500 {object} apierrors.Error
-// @Router /role/create [POST]
+//
+//	@Tags			role
+//	@Summary		Создать роль
+//	@Description	Создать роль
+//	@Accept			json
+//	@Produce		json
+//	@Param			X-AUTH-ADMIN	header		string						true	"Токен администратора"
+//	@Param			body			body		domain.CreateRoleRequest	true	"Тело запроса"
+//	@Success		200				{object}	domain.Role
+//	@Failure		400				{object}	apierrors.Error	"Невалидное тело запроса"
+//	@Failure		409				{object}	apierrors.Error	"Роль с указанным именем уже существует"
+//	@Failure		500				{object}	apierrors.Error
+//	@Router			/role/create [POST]
 func (u Role) CreateRole(ctx context.Context, req domain.CreateRoleRequest, r *http.Request) (*domain.Role, error) {
 	adminId, err := getAdminId(r)
 	if err != nil {
@@ -79,18 +80,19 @@ func (u Role) CreateRole(ctx context.Context, req domain.CreateRoleRequest, r *h
 }
 
 // UpdateRole
-// @Tags role
-// @Summary Обновить роль
-// @Description Обновить данные существующую роль
-// @Accept json
-// @Produce json
-// @Param X-AUTH-ADMIN header string true "Токен администратора"
-// @Param body body domain.UpdateRoleRequest true "Тело запроса"
-// @Success 200 {object} domain.Role
-// @Failure 404 {object} apierrors.Error "Роль с указанным id не существует"
-// @Failure 409 {object} apierrors.Error "Роль с указанным именем уже существует"
-// @Failure 500 {object} apierrors.Error
-// @Router /role/update [POST]
+//
+//	@Tags			role
+//	@Summary		Обновить роль
+//	@Description	Обновить данные существующую роль
+//	@Accept			json
+//	@Produce		json
+//	@Param			X-AUTH-ADMIN	header		string						true	"Токен администратора"
+//	@Param			body			body		domain.UpdateRoleRequest	true	"Тело запроса"
+//	@Success		200				{object}	domain.Role
+//	@Failure		404				{object}	apierrors.Error	"Роль с указанным id не существует"
+//	@Failure		409				{object}	apierrors.Error	"Роль с указанным именем уже существует"
+//	@Failure		500				{object}	apierrors.Error
+//	@Router			/role/update [POST]
 func (u Role) UpdateRole(ctx context.Context, req domain.UpdateRoleRequest, r *http.Request) (*domain.Role, error) {
 	adminId, err := getAdminId(r)
 	if err != nil {
@@ -111,17 +113,18 @@ func (u Role) UpdateRole(ctx context.Context, req domain.UpdateRoleRequest, r *h
 }
 
 // DeleteRole
-// @Tags role
-// @Summary Удалить роль
-// @Description Удалить существующую роль
-// @Accept json
-// @Produce json
-// @Param X-AUTH-ADMIN header string true "Токен администратора"
-// @Param body body domain.DeleteRoleRequest true "Тело запроса"
-// @Success 200
-// @Failure 400 {object} apierrors.Error "Невалидное тело запроса"
-// @Failure 500 {object} apierrors.Error
-// @Router /role/delete [POST]
+//
+//	@Tags			role
+//	@Summary		Удалить роль
+//	@Description	Удалить существующую роль
+//	@Accept			json
+//	@Produce		json
+//	@Param			X-AUTH-ADMIN	header	string						true	"Токен администратора"
+//	@Param			body			body	domain.DeleteRoleRequest	true	"Тело запроса"
+//	@Success		200
+//	@Failure		400	{object}	apierrors.Error	"Невалидное тело запроса"
+//	@Failure		500	{object}	apierrors.Error
+//	@Router			/role/delete [POST]
 func (u Role) DeleteRole(ctx context.Context, req domain.DeleteRoleRequest, r *http.Request) error {
 	adminId, err := getAdminId(r)
 	if err != nil {
