@@ -13,7 +13,7 @@ type DownloadService interface {
 	DownloadUsers(ctx context.Context, req domain.UsersPageRequest, w http.ResponseWriter) error
 	DownloadSessions(ctx context.Context, req domain.SessionPageRequest, w http.ResponseWriter) error
 	DownloadAudit(ctx context.Context, req domain.AuditPageRequest, w http.ResponseWriter) error
-	DownloadRoles(ctx context.Context, w http.ResponseWriter) error
+	DownloadRoles(ctx context.Context, req domain.RoleAllRequest, w http.ResponseWriter) error
 }
 
 type Download struct {
@@ -92,8 +92,8 @@ func (c Download) Audit(ctx context.Context, req domain.AuditPageRequest, w http
 //	@Success	200
 //	@Failure	500	{object}	apierrors.Error	"Внутренняя ошибка сервиса ```{errorCode: -1}```"
 //	@Router		/role/download [POST]
-func (c Download) Roles(ctx context.Context, w http.ResponseWriter) error {
-	err := c.service.DownloadRoles(ctx, w)
+func (c Download) Roles(ctx context.Context, req domain.RoleAllRequest, w http.ResponseWriter) error {
+	err := c.service.DownloadRoles(ctx, req, w)
 	if err != nil {
 		return errors.WithMessage(err, "download roles")
 	}

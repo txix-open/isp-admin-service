@@ -232,7 +232,22 @@ func (s *DownloadSuite) TestAuditHappyPath() {
 }
 
 func (s *DownloadSuite) TestRolesHappyPath() {
+	InsertRole(s.db, entity.Role{
+		Name:             "admin_1",
+		ApplicationGroup: "123",
+		Permissions:      s.permissions,
+	})
+	InsertRole(s.db, entity.Role{
+		Name:             "admin_2",
+		ApplicationGroup: "456",
+		Permissions:      s.permissions,
+	})
+
+	applicationGroup := "123"
 	resp, err := s.httpCli.Post("role/download").
+		JsonRequestBody(domain.RoleAllRequest{
+			ApplicationGroup: &applicationGroup,
+		}).
 		StatusCodeToError().
 		Do(s.T().Context())
 	s.Require().NoError(err)
@@ -240,4 +255,23 @@ func (s *DownloadSuite) TestRolesHappyPath() {
 	records, err := csv.NewReader(resp.Raw.Body).ReadAll()
 	s.Require().NoError(err)
 	s.Require().NotEmpty(records)
+
+	header := records[0]
+	col := make(map[string]int, len(header))
+	for i, name := range header {
+		col[name] = i
+	}
+
+	moveIdx, ok := col["Действие"]
+	s.Require().True(ok)
+	keyIdx, ok := col["Ключ в системе"]
+	s.Require().True(ok)
+	nameIdx, ok := col["admin_1"]
+	s.Require().True(ok)
+
+	s.Require().Len(records, 2)
+	row := records[1]
+	s.Require().EqualValues("123", row[moveIdx])
+	s.Require().EqualValues("data_download", row[keyIdx])
+	s.Require().EqualValues("+", row[nameIdx])
 }
