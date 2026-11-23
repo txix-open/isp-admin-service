@@ -39,8 +39,8 @@ func NewRole(roleService roleService) Role {
 //	@Failure		400				{object}	apierrors.Error
 //	@Failure		500				{object}	apierrors.Error
 //	@Router			/role/all [POST]
-func (u Role) All(ctx context.Context) ([]domain.Role, error) {
-	users, err := u.roleService.All(ctx)
+func (u Role) All(ctx context.Context, req domain.RoleAllRequest) ([]domain.Role, error) {
+	users, err := u.roleService.All(ctx, req)
 	if err != nil {
 		return nil, errors.WithMessage(err, "get roles")
 	}

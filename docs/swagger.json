@@ -427,15 +427,6 @@
                         "name": "X-AUTH-ADMIN",
                         "in": "header",
                         "required": true
-                    },
-                    {
-                        "description": "Тело запроса",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/domain.RoleAllRequest"
-                        }
                     }
                 ],
                 "responses": {
@@ -1987,15 +1978,6 @@
                 },
                 "updatedAt": {
                     "description": "Дата обновления",
-                    "type": "string"
-                }
-            }
-        },
-        "domain.RoleAllRequest": {
-            "type": "object",
-            "properties": {
-                "applicationGroup": {
-                    "description": "Фильтр по группе приложений",
                     "type": "string"
                 }
             }
