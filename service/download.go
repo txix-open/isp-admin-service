@@ -178,7 +178,7 @@ func (s Download) DownloadUsers(ctx context.Context, req domain.UsersPageRequest
 		return errors.WithMessage(err, "get users")
 	}
 
-	roles, err := s.roleService.All(ctx, domain.RoleAllRequest{})
+	roles, err := s.roleService.All(ctx, req.RoleAllRequest)
 	if err != nil {
 		return errors.WithMessage(err, "get roles")
 	}
@@ -216,8 +216,8 @@ func (s Download) DownloadUsers(ctx context.Context, req domain.UsersPageRequest
 	return nil
 }
 
-func (s Download) DownloadRoles(ctx context.Context, w http.ResponseWriter) error {
-	roles, err := s.roleService.All(ctx, domain.RoleAllRequest{})
+func (s Download) DownloadRoles(ctx context.Context, req domain.RoleAllRequest, w http.ResponseWriter) error {
+	roles, err := s.roleService.All(ctx, req)
 	if err != nil {
 		return errors.WithMessage(err, "get roles")
 	}

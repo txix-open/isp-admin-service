@@ -2353,6 +2353,11 @@
                 "limit"
             ],
             "properties": {
+                "applicationGroup": {
+                    "description": "Фильтр по группе приложений",
+                    "type": "string",
+                    "minLength": 1
+                },
                 "limit": {
                     "description": "Максимальное количество записей",
                     "type": "integer"
