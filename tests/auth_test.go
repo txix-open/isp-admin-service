@@ -18,18 +18,15 @@ import (
 
 	"github.com/txix-open/isp-kit/errors"
 	"github.com/txix-open/isp-kit/test/fake"
+	"github.com/txix-open/isp-kit/test/httpt"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/stretchr/testify/suite"
 	"github.com/txix-open/isp-kit/dbx"
-	"github.com/txix-open/isp-kit/grpc/client"
 	"github.com/txix-open/isp-kit/http/httpcli"
 	"github.com/txix-open/isp-kit/json"
 	"github.com/txix-open/isp-kit/test"
 	"github.com/txix-open/isp-kit/test/dbt"
-	"github.com/txix-open/isp-kit/test/grpct"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 func TestAuthTestSuite(t *testing.T) {
@@ -42,7 +39,7 @@ type AuthTestSuite struct {
 
 	test            *test.Test
 	db              *dbt.TestDb
-	grpcCli         *client.Client
+	httpCli         *httpcli.Client
 	oauthCli        *httpcli.Client
 	oauthClientName string
 }
@@ -81,11 +78,11 @@ func (s *AuthTestSuite) SetupTest() {
 		Config(s.T().Context(), remote, time.Minute)
 	s.Require().NoError(err)
 
-	server, apiCli := grpct.TestServer(testInstance, cfg.Handler)
-	s.grpcCli = apiCli
+	server, cli := httpt.TestServer(s.test, cfg.Handler)
+	s.httpCli = cli
 
 	testInstance.T().Cleanup(func() {
-		server.Shutdown()
+		server.Close()
 		mocksrv.Close()
 	})
 }
@@ -99,13 +96,13 @@ func (s *AuthTestSuite) TestLoginHappyPath() {
 	})
 
 	response := domain.LoginResponse{}
-	err := s.grpcCli.Invoke("admin/auth/login").
+	err := s.httpCli.Post("admin/auth/login").
 		JsonRequestBody(domain.LoginRequest{
 			Email:    "a@a.ru",
 			Password: "password",
 		}).
 		JsonResponseBody(&response).
-		Do(s.T().Context())
+		DoWithoutResponse(s.T().Context())
 	s.Require().NoError(err)
 
 	tokenInfo := SelectTokenEntityByToken(s.db, response.Token)
@@ -115,16 +112,18 @@ func (s *AuthTestSuite) TestLoginHappyPath() {
 }
 
 func (s *AuthTestSuite) TestLoginNotFound() {
-	err := s.grpcCli.Invoke("admin/auth/login").
+	err := s.httpCli.Post("admin/auth/login").
 		JsonRequestBody(domain.LoginRequest{
 			Email:    "a1@a.ru",
 			Password: "password",
 		}).
-		Do(s.T().Context())
+		StatusCodeToError().
+		DoWithoutResponse(s.T().Context())
 	s.Require().Error(err)
-	st, ok := status.FromError(err)
-	s.Require().True(ok)
-	s.Require().Equal(codes.Unauthenticated, st.Code())
+
+	var httpErr httpcli.ErrorResponse
+	s.Require().ErrorAs(err, &httpErr)
+	s.Require().Equal(http.StatusUnauthorized, httpErr.StatusCode)
 
 	time.Sleep(1 * time.Second) // wait for go SaveAuditAsync()
 }
@@ -138,16 +137,18 @@ func (s *AuthTestSuite) TestBlockedUser() {
 		Blocked:   true,
 	})
 
-	err := s.grpcCli.Invoke("admin/auth/login").
+	err := s.httpCli.Post("admin/auth/login").
 		JsonRequestBody(domain.LoginRequest{
 			Email:    "a@a.ru",
 			Password: "password",
 		}).
-		Do(s.T().Context())
+		StatusCodeToError().
+		DoWithoutResponse(s.T().Context())
 	s.Require().Error(err)
-	st, ok := status.FromError(err)
-	s.Require().True(ok)
-	s.Require().Equal(codes.Unauthenticated, st.Code())
+
+	var httpErr httpcli.ErrorResponse
+	s.Require().ErrorAs(err, &httpErr)
+	s.Require().Equal(http.StatusUnauthorized, httpErr.StatusCode)
 
 	time.Sleep(1 * time.Second) // wait for go SaveAuditAsync()
 }
@@ -160,16 +161,18 @@ func (s *AuthTestSuite) TestLoginWrongPassword() {
 		Password:  "password",
 	})
 
-	err := s.grpcCli.Invoke("admin/auth/login").
+	err := s.httpCli.Post("admin/auth/login").
 		JsonRequestBody(domain.LoginRequest{
 			Email:    "a@a.ru",
 			Password: "WrongPassword",
 		}).
-		Do(s.T().Context())
+		StatusCodeToError().
+		DoWithoutResponse(s.T().Context())
 	s.Require().Error(err)
-	st, ok := status.FromError(err)
-	s.Require().True(ok)
-	s.Require().Equal(codes.Unauthenticated, st.Code())
+
+	var httpErr httpcli.ErrorResponse
+	s.Require().ErrorAs(err, &httpErr)
+	s.Require().Equal(http.StatusUnauthorized, httpErr.StatusCode)
 
 	time.Sleep(1 * time.Second) // wait for go SaveAuditAsync()
 }
@@ -177,13 +180,13 @@ func (s *AuthTestSuite) TestLoginWrongPassword() {
 func (s *AuthTestSuite) TestOauthLoginHappyPath() {
 	response := domain.LoginResponse{}
 
-	err := s.grpcCli.Invoke("admin/auth/login_with_oauth").
+	err := s.httpCli.Post("admin/auth/login_with_oauth").
 		JsonRequestBody(domain.LoginOauthRequest{
 			AuthCode:   "code",
 			ClientName: s.oauthClientName,
 		}).
 		JsonResponseBody(&response).
-		Do(s.T().Context())
+		DoWithoutResponse(s.T().Context())
 	s.Require().NoError(err)
 	user := entity.User{}
 	s.db.Must().SelectRow(&user, "select id, email, full_name from users where oauth_user_id = $1", "oauthUser1")
@@ -199,17 +202,19 @@ func (s *AuthTestSuite) TestOauthLoginHappyPath() {
 func (s *AuthTestSuite) TestOauthLogin_UnknownClient() {
 	response := domain.LoginResponse{}
 
-	err := s.grpcCli.Invoke("admin/auth/login_with_oauth").
+	err := s.httpCli.Post("admin/auth/login_with_oauth").
 		JsonRequestBody(domain.LoginOauthRequest{
 			AuthCode:   "code",
 			ClientName: s.oauthClientName + fake.It[string](),
 		}).
 		JsonResponseBody(&response).
-		Do(s.T().Context())
+		StatusCodeToError().
+		DoWithoutResponse(s.T().Context())
 	s.Require().Error(err)
-	st, ok := status.FromError(err)
-	s.Require().True(ok)
-	s.Require().Equal(codes.Unauthenticated, st.Code())
+
+	var httpErr httpcli.ErrorResponse
+	s.Require().ErrorAs(err, &httpErr)
+	s.Require().Equal(http.StatusUnauthorized, httpErr.StatusCode)
 }
 
 func (s *AuthTestSuite) Test_Logout_HappyPath() {
@@ -221,9 +226,9 @@ func (s *AuthTestSuite) Test_Logout_HappyPath() {
 		CreatedAt: time.Time{},
 		ExpiredAt: time.Time{},
 	})
-	err := s.grpcCli.Invoke("admin/auth/logout").
-		AppendMetadata(domain.AdminAuthIdHeader, strconv.Itoa(int(userId))).
-		Do(s.T().Context())
+	err := s.httpCli.Post("admin/auth/logout").
+		Header(domain.AdminAuthIdHeader, strconv.Itoa(int(userId))).
+		DoWithoutResponse(s.T().Context())
 	s.Require().NoError(err)
 
 	tokenInfo := SelectTokenEntityByToken(s.db, "token-841297641213")
@@ -233,9 +238,9 @@ func (s *AuthTestSuite) Test_Logout_HappyPath() {
 }
 
 func (s *AuthTestSuite) Test_Logout_NotFound() {
-	err := s.grpcCli.Invoke("admin/auth/logout").
-		AppendMetadata(domain.AdminAuthIdHeader, "0143218411981").
-		Do(s.T().Context())
+	err := s.httpCli.Post("admin/auth/logout").
+		Header(domain.AdminAuthIdHeader, "0143218411981").
+		DoWithoutResponse(s.T().Context())
 	s.Require().NoError(err)
 
 	time.Sleep(time.Second)
@@ -264,9 +269,9 @@ func (s *AuthTestSuite) Test_Logout_AlreadyRevoke() {
 		CreatedAt: time.Time{},
 		ExpiredAt: time.Time{},
 	})
-	err := s.grpcCli.Invoke("admin/auth/logout").
-		AppendMetadata(domain.AdminAuthIdHeader, strconv.Itoa(int(userId))).
-		Do(s.T().Context())
+	err := s.httpCli.Post("admin/auth/logout").
+		Header(domain.AdminAuthIdHeader, strconv.Itoa(int(userId))).
+		DoWithoutResponse(s.T().Context())
 	s.Require().NoError(err)
 
 	tokenInfo := SelectTokenEntityByToken(s.db, "token-148623719462")
@@ -290,20 +295,24 @@ func (s *AuthTestSuite) TestBruteForceLogin() {
 		group.Go(func() error {
 			start := time.Now()
 			response := domain.LoginResponse{}
-			err := s.grpcCli.Invoke("admin/auth/login").
+			err := s.httpCli.Post("admin/auth/login").
 				JsonRequestBody(domain.LoginRequest{
 					Email:    "a@a.ru",
 					Password: fmt.Sprintf("password %s", strconv.Itoa(index)),
 				}).
 				JsonResponseBody(&response).
-				Do(ctx)
+				StatusCodeToError().
+				DoWithoutResponse(ctx)
 			s.Require().Error(err)
 
-			switch status.Code(err) { // nolint:exhaustive
-			case codes.ResourceExhausted:
+			var httpErr httpcli.ErrorResponse
+			s.Require().ErrorAs(err, &httpErr)
+
+			switch httpErr.StatusCode { // nolint:exhaustive
+			case http.StatusTooManyRequests:
 				tooManyRequestsErrorCount.Add(1)
 				s.Require().True(time.Since(start) < time.Second)
-			case codes.Unauthenticated:
+			case http.StatusUnauthorized:
 				unauthorizedErrorCount.Add(1)
 				s.Require().True(time.Since(start) > time.Second)
 			default:

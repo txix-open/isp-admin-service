@@ -1,6 +1,7 @@
 package tests_test
 
 import (
+	"net/http"
 	"strconv"
 	"testing"
 	"time"
@@ -13,13 +14,10 @@ import (
 	"github.com/stretchr/testify/suite"
 	"github.com/txix-open/isp-kit/dbx"
 	"github.com/txix-open/isp-kit/errors"
-	"github.com/txix-open/isp-kit/grpc/client"
 	"github.com/txix-open/isp-kit/http/httpcli"
 	"github.com/txix-open/isp-kit/test"
 	"github.com/txix-open/isp-kit/test/dbt"
-	"github.com/txix-open/isp-kit/test/grpct"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"github.com/txix-open/isp-kit/test/httpt"
 )
 
 func TestRoleTestSuite(t *testing.T) {
@@ -32,7 +30,7 @@ type RoleTestSuite struct {
 
 	test    *test.Test
 	db      *dbt.TestDb
-	grpcCli *client.Client
+	httpCli *httpcli.Client
 	adminId int64
 }
 
@@ -48,11 +46,11 @@ func (s *RoleTestSuite) SetupTest() {
 		Config(s.T().Context(), remote, time.Minute)
 	s.Require().NoError(err)
 
-	server, apiCli := grpct.TestServer(testInstance, cfg.Handler)
-	s.grpcCli = apiCli
+	server, apiCli := httpt.TestServer(testInstance, cfg.Handler)
+	s.httpCli = apiCli
 
 	testInstance.T().Cleanup(func() {
-		server.Shutdown()
+		server.Close()
 	})
 
 	roleId := InsertRole(s.db, entity.Role{
@@ -79,7 +77,8 @@ func (s *RoleTestSuite) TestAllRolesWithoutFilter() {
 	InsertRole(s.db, entity.Role{Name: "groupB", ApplicationGroup: "groupB"})
 
 	roles := []domain.Role{}
-	s.Require().NoError(s.invoke("admin/role/all", domain.RoleAllRequest{}, &roles))
+	_, err := s.request("admin/role/all", domain.RoleAllRequest{}, &roles)
+	s.Require().NoError(err)
 
 	groups := make(map[string]string, len(roles))
 	for _, role := range roles {
@@ -94,12 +93,10 @@ func (s *RoleTestSuite) TestAllRolesWithoutFilter() {
 
 func (s *RoleTestSuite) TestAllRolesInvalidArgument() {
 	roles := []domain.Role{}
-	err := s.invoke("admin/role/all", domain.RoleAllRequest{ApplicationGroup: new("")}, &roles)
+	statusCode, err := s.request("admin/role/all", domain.RoleAllRequest{ApplicationGroup: new("")}, &roles)
 
 	s.Require().Error(err)
-	st, ok := status.FromError(err)
-	s.Require().True(ok)
-	s.Require().Equal(codes.InvalidArgument, st.Code())
+	s.Require().Equal(http.StatusBadRequest, statusCode)
 	s.Require().Empty(roles)
 }
 
@@ -108,30 +105,34 @@ func (s *RoleTestSuite) TestAllRolesFilterByApplicationGroup() {
 	InsertRole(s.db, entity.Role{Name: "groupB", ApplicationGroup: "groupB"})
 
 	roles := []domain.Role{}
-	s.Require().NoError(s.invoke("admin/role/all", domain.RoleAllRequest{ApplicationGroup: new("groupA")}, &roles))
+	_, err := s.request("admin/role/all", domain.RoleAllRequest{ApplicationGroup: new("groupA")}, &roles)
+	s.Require().NoError(err)
 
 	s.Require().Len(roles, 1)
 	s.Require().Equal("groupA", roles[0].ApplicationGroup)
 
 	roles = []domain.Role{}
-	s.Require().NoError(s.invoke("admin/role/all", domain.RoleAllRequest{ApplicationGroup: new("groupC")}, &roles))
+	_, err = s.request("admin/role/all", domain.RoleAllRequest{ApplicationGroup: new("groupC")}, &roles)
+	s.Require().NoError(err)
 
 	s.Require().Empty(roles)
 }
 
 func (s *RoleTestSuite) TestCreateRoleApplicationGroup() {
 	role := domain.Role{}
-	s.Require().NoError(s.invoke("admin/role/create", domain.CreateRoleRequest{
+	_, err := s.request("admin/role/create", domain.CreateRoleRequest{
 		Name:             "role_new",
 		ApplicationGroup: "group",
 		Permissions:      []string{},
-	}, &role))
+	}, &role)
+	s.Require().NoError(err)
 
 	roleEmpty := domain.Role{}
-	s.Require().NoError(s.invoke("admin/role/create", domain.CreateRoleRequest{
+	_, err = s.request("admin/role/create", domain.CreateRoleRequest{
 		Name:        "role_empty",
 		Permissions: []string{},
-	}, &roleEmpty))
+	}, &roleEmpty)
+	s.Require().NoError(err)
 
 	s.Require().Equal("role_new", role.Name)
 	s.Require().Equal("group", role.ApplicationGroup)
@@ -146,26 +147,27 @@ func (s *RoleTestSuite) TestUpdateRoleApplicationGroup() {
 	})
 
 	role := domain.Role{}
-	s.Require().NoError(s.invoke("admin/role/update", domain.UpdateRoleRequest{
+	_, err := s.request("admin/role/update", domain.UpdateRoleRequest{
 		Id:               int(roleId),
 		Name:             "role_new",
 		ApplicationGroup: "group_new",
 		Permissions:      []string{},
-	}, &role))
-
+	}, &role)
+	s.Require().NoError(err)
 	s.Require().Equal("role_new", role.Name)
 	s.Require().Equal("group_new", role.ApplicationGroup)
 }
 
-func (s *RoleTestSuite) invoke(path string, req, resp any) error {
-	err := s.grpcCli.Invoke(path).
+func (s *RoleTestSuite) request(path string, req, resp any) (int, error) {
+	err := s.httpCli.Post(path).
 		JsonRequestBody(req).
 		JsonResponseBody(resp).
-		AppendMetadata(domain.AdminAuthIdHeader, strconv.Itoa(int(s.adminId))).
-		Do(s.T().Context())
+		StatusCodeToError().
+		Header(domain.AdminAuthIdHeader, strconv.Itoa(int(s.adminId))).
+		DoWithoutResponse(s.T().Context())
 	if err != nil {
-		return errors.WithMessagef(err, "invoke %s", path)
+		return http.StatusBadRequest, errors.WithMessagef(err, "request %s", path)
 	}
 
-	return nil
+	return http.StatusOK, nil
 }

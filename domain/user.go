@@ -32,7 +32,7 @@ type UserQuery struct {
 }
 
 type UsersPageRequest struct {
-	LimitOffestParams
+	LimitOffsetParams
 
 	Order *OrderParams // Параметры сортировки
 	Query *UserQuery   // Параметры выборки

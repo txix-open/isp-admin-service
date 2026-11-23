@@ -18,9 +18,10 @@ import (
 	"github.com/txix-open/isp-kit/bgjobx"
 	"github.com/txix-open/isp-kit/db"
 	"github.com/txix-open/isp-kit/errors"
-	"github.com/txix-open/isp-kit/grpc/endpoint"
-	"github.com/txix-open/isp-kit/grpc/isp"
+	"github.com/txix-open/isp-kit/http/endpoint"
+	"github.com/txix-open/isp-kit/http/endpoint/httplog"
 	"github.com/txix-open/isp-kit/http/httpcli"
+	"github.com/txix-open/isp-kit/http/router"
 	"github.com/txix-open/isp-kit/log"
 )
 
@@ -44,7 +45,7 @@ func NewLocator(logger log.Logger, oauthCli *httpcli.Client, db DB) Locator {
 }
 
 type Config struct {
-	Handler  isp.BackendServiceServer
+	Handler  *router.Router
 	BgJobCfg []bgjobx.WorkerConfig
 }
 
@@ -97,6 +98,14 @@ func (l Locator) Config(
 
 	uiSettingsService := service.NewUiSettings(oauthBaseUrl, oauthSettings)
 
+	downloadService := service.NewDownload(
+		auditService,
+		userService,
+		tokenService,
+		roleService,
+		permissionsService,
+	)
+
 	userController := controller.NewUser(userService)
 	customizationController := controller.NewCustomization(cfg.UiDesign)
 	authController := controller.NewAuth(authService, l.logger)
@@ -106,8 +115,11 @@ func (l Locator) Config(
 	roleController := controller.NewRole(roleService)
 	permissionController := controller.NewPermissions(permissionsService)
 	uiSettingsController := controller.NewUiSettings(uiSettingsService)
+	downloadController := controller.NewDownload(downloadService)
+
+	wrapper := endpoint.DefaultWrapper(l.logger, httplog.Log(l.logger, true))
 	handler := routes.Handler(
-		endpoint.DefaultWrapper(l.logger),
+		wrapper,
 		routes.Controllers{
 			User:          userController,
 			Customization: customizationController,
@@ -118,6 +130,7 @@ func (l Locator) Config(
 			Role:          roleController,
 			Permissions:   permissionController,
 			UiSettings:    uiSettingsController,
+			Download:      downloadController,
 		},
 	)
 

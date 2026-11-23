@@ -17,7 +17,7 @@ type AuditResponse struct {
 }
 
 type AuditPageRequest struct {
-	LimitOffestParams
+	LimitOffsetParams
 
 	Order *OrderParams // Параметры сортировки
 	Query *AuditQuery  // Параметры выборки

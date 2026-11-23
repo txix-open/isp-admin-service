@@ -7,7 +7,7 @@ const (
 	DefaultOrderType  = "desc"
 )
 
-type LimitOffestParams struct {
+type LimitOffsetParams struct {
 	Limit  uint64 `validate:"required"` // Максимальное количество записей
 	Offset uint64 // Отступ для выборки
 }

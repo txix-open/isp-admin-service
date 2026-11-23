@@ -16,7 +16,7 @@ import (
 	"github.com/txix-open/isp-kit/dbrx"
 	"github.com/txix-open/isp-kit/dbx"
 	"github.com/txix-open/isp-kit/errors"
-	"github.com/txix-open/isp-kit/grpc"
+	"github.com/txix-open/isp-kit/http"
 	"github.com/txix-open/isp-kit/http/httpcli"
 	"github.com/txix-open/isp-kit/http/httpclix"
 	"github.com/txix-open/isp-kit/log"
@@ -26,7 +26,7 @@ import (
 type Assembly struct {
 	boot     *bootstrap.Bootstrap
 	db       *dbrx.Client
-	server   *grpc.Server
+	server   *http.Server
 	oauthCli *httpcli.Client
 	logger   *log.Adapter
 	bgjobCli *bgjobx.Client
@@ -43,7 +43,7 @@ func New(boot *bootstrap.Bootstrap) (*Assembly, error) {
 	return &Assembly{
 		boot:     boot,
 		db:       db,
-		server:   grpc.NewServer(),
+		server:   http.NewServer(logger),
 		logger:   logger,
 		oauthCli: httpclix.Default(httpcli.WithMiddlewares(httpclix.Log(wrappedLogger))),
 		bgjobCli: bgjobCli,
@@ -109,7 +109,7 @@ func (a *Assembly) Runners() []app.Runner {
 		app.RunnerFunc(func(ctx context.Context) error {
 			err := a.server.ListenAndServe(a.boot.BindingAddress)
 			if err != nil {
-				return errors.WithMessage(err, "listen ans serve grpc server")
+				return errors.WithMessage(err, "listen and serve http server")
 			}
 			return nil
 		}),
@@ -127,7 +127,7 @@ func (a *Assembly) Closers() []app.Closer {
 	return []app.Closer{
 		a.boot.ClusterCli,
 		app.CloserFunc(func() error {
-			a.server.Shutdown()
+			_ = a.server.Shutdown(context.Background())
 			return nil
 		}),
 		app.CloserFunc(func() error {

@@ -4,23 +4,22 @@ import (
 	"isp-admin-service/assembly"
 	"isp-admin-service/conf"
 	"isp-admin-service/domain"
+	"net/http"
 	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
-	"github.com/txix-open/isp-kit/grpc/client"
+	"github.com/txix-open/isp-kit/http/httpcli"
 	"github.com/txix-open/isp-kit/test"
 	"github.com/txix-open/isp-kit/test/fake"
-	"github.com/txix-open/isp-kit/test/grpct"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"github.com/txix-open/isp-kit/test/httpt"
 )
 
 type UiSettingsSuite struct {
 	suite.Suite
 
 	test               *test.Test
-	apiCli             *client.Client
+	apiCli             *httpcli.Client
 	oauthClientSetting conf.OauthClientConfig
 	baseOauthUrl       string
 }
@@ -54,18 +53,18 @@ func (s *UiSettingsSuite) SetupTest() {
 		Config(s.T().Context(), remote, 0)
 	s.Require().NoError(err)
 
-	_, s.apiCli = grpct.TestServer(s.test, cfg.Handler)
+	_, s.apiCli = httpt.TestServer(s.test, cfg.Handler)
 }
 
 func (s *UiSettingsSuite) Test_HappyPath() {
 	var resp domain.UiOauthSetting
 
-	err := s.apiCli.Invoke("admin/ui_settings/oauth").
+	err := s.apiCli.Post("admin/ui_settings/oauth").
 		JsonRequestBody(domain.ClientNameRequest{
 			ClientName: s.oauthClientSetting.ClientName,
 		}).
 		JsonResponseBody(&resp).
-		Do(s.T().Context())
+		DoWithoutResponse(s.T().Context())
 	s.Require().NoError(err)
 
 	loginURL, err := url.Parse(resp.LoginUrl)
@@ -93,13 +92,15 @@ func (s *UiSettingsSuite) Test_HappyPath() {
 }
 
 func (s *UiSettingsSuite) Test_UnknownClient() {
-	err := s.apiCli.Invoke("admin/ui_settings/oauth").
+	err := s.apiCli.Post("admin/ui_settings/oauth").
 		JsonRequestBody(domain.ClientNameRequest{
 			ClientName: s.oauthClientSetting.ClientName + fake.It[string](),
 		}).
-		Do(s.T().Context())
+		StatusCodeToError().
+		DoWithoutResponse(s.T().Context())
 	s.Require().Error(err)
-	st, ok := status.FromError(err)
-	s.Require().True(ok)
-	s.Require().Equal(codes.Unauthenticated, st.Code())
+
+	var httpErr httpcli.ErrorResponse
+	s.Require().ErrorAs(err, &httpErr)
+	s.Require().Equal(http.StatusUnauthorized, httpErr.StatusCode)
 }
