@@ -12,6 +12,10 @@ import (
 	"github.com/txix-open/isp-kit/metrics/sql_metrics"
 )
 
+const (
+	userIdUserRolesColumn = "user_id"
+)
+
 type UserRole struct {
 	db db.DB
 }
@@ -23,8 +27,8 @@ func NewUserRole(db db.DB) UserRole {
 func (u UserRole) GetRolesByUserIds(ctx context.Context, identity []int) ([]entity.UserRole, error) {
 	ctx = sql_metrics.OperationLabelToContext(ctx, "UserRole.GetRolesByUserIds")
 
-	rolesQ, args, err := query.New().Select("role_id", "user_id").
-		From("user_roles").Where(squirrel.Eq{"user_id": identity}).ToSql()
+	rolesQ, args, err := query.New().Select("role_id", userIdUserRolesColumn).
+		From("user_roles").Where(squirrel.Eq{userIdUserRolesColumn: identity}).ToSql()
 	if err != nil {
 		return nil, errors.WithMessage(err, "build query")
 	}
@@ -67,7 +71,7 @@ func (u UserRole) UpsertUserRoleLinks(ctx context.Context, id int, roleIds []int
 	ctx = sql_metrics.OperationLabelToContext(ctx, "UserRole.UpsertUserRoleLinks")
 
 	deleteQ, args, err := query.New().
-		Delete("user_roles").Where(squirrel.Eq{"user_id": id}).ToSql()
+		Delete("user_roles").Where(squirrel.Eq{userIdUserRolesColumn: id}).ToSql()
 	if err != nil {
 		return errors.WithMessage(err, "build query")
 	}
@@ -83,7 +87,7 @@ func (u UserRole) UpsertUserRoleLinks(ctx context.Context, id int, roleIds []int
 
 	rolesQ := query.New().
 		Insert("user_roles").
-		Columns("user_id", "role_id")
+		Columns(userIdUserRolesColumn, "role_id")
 	for _, roleId := range roleIds {
 		rolesQ = rolesQ.Values(id, roleId)
 	}

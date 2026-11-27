@@ -186,7 +186,7 @@ func (s *UserTestSuite) TestGetUsers() {
 	response := domain.UsersResponse{}
 	err := s.grpcCli.Invoke("admin/user/get_users").
 		JsonRequestBody(domain.UsersPageRequest{
-			LimitOffestParams: domain.LimitOffestParams{
+			LimitOffestParams: domain.LimitOffestParams{ //nolint:modernize
 				Limit:  5,
 				Offset: 1,
 			},
@@ -214,7 +214,7 @@ func (s *UserTestSuite) TestGetUsers() {
 	email = "test@mail.ru"
 	err = s.grpcCli.Invoke("admin/user/get_users").
 		JsonRequestBody(domain.UsersPageRequest{
-			LimitOffestParams: domain.LimitOffestParams{
+			LimitOffestParams: domain.LimitOffestParams{ //nolint:modernize
 				Limit:  10,
 				Offset: 0,
 			},
@@ -298,7 +298,7 @@ func (s *UserTestSuite) TestGetUsersFilterByLastActiveAt() {
 	response := domain.UsersResponse{}
 	err = s.grpcCli.Invoke("admin/user/get_users").
 		JsonRequestBody(domain.UsersPageRequest{
-			LimitOffestParams: domain.LimitOffestParams{
+			LimitOffestParams: domain.LimitOffestParams{ //nolint:modernize
 				Limit:  5,
 				Offset: 0,
 			},
@@ -334,7 +334,7 @@ func (s *UserTestSuite) TestGetUsersSortByName() {
 	response := domain.UsersResponse{}
 	err := s.grpcCli.Invoke("admin/user/get_users").
 		JsonRequestBody(domain.UsersPageRequest{
-			LimitOffestParams: domain.LimitOffestParams{
+			LimitOffestParams: domain.LimitOffestParams{ //nolint:modernize
 				Limit:  10,
 				Offset: 0,
 			},

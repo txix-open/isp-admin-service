@@ -48,7 +48,7 @@ func (u User) GetUserByEmail(ctx context.Context, email string) (*entity.User, e
 			updatedAtUsersColumn, oauthUserIdUsersColumn, blockedUsersColumn, descriptionUsersColumn, lastActiveAtUsersColumn,
 			fullNameUsersColumn).
 		From("users").
-		Where(squirrel.Eq{"email": email}).
+		Where(squirrel.Eq{emailUsersColumn: email}).
 		ToSql()
 	if err != nil {
 		return nil, errors.WithMessage(err, "build query")
@@ -97,7 +97,7 @@ func (u User) GetUserById(ctx context.Context, identity int64) (*entity.User, er
 func (u User) GetUserByEmailAndOauthId(ctx context.Context, email string, oauthUserId string) (*entity.User, error) {
 	ctx = sql_metrics.OperationLabelToContext(ctx, "User.GetUserByEmailAndOauthId")
 
-	equalClause := squirrel.Eq{"email": email, "oauth_user_id": nil}
+	equalClause := squirrel.Eq{emailUsersColumn: email, "oauth_user_id": nil}
 	if oauthUserId != "" {
 		equalClause["oauth_user_id"] = oauthUserId
 	}
@@ -217,7 +217,7 @@ func (u User) GetUsersByEmail(ctx context.Context, email string) ([]entity.User,
 			updatedAtUsersColumn, oauthUserIdUsersColumn, blockedUsersColumn, descriptionUsersColumn, lastActiveAtUsersColumn,
 			fullNameUsersColumn).
 		From("users").
-		Where(squirrel.Eq{"email": email}).
+		Where(squirrel.Eq{emailUsersColumn: email}).
 		ToSql()
 	if err != nil {
 		return nil, errors.WithMessage(err, "build query")
@@ -412,7 +412,7 @@ func reqUsersQuery(q squirrel.SelectBuilder, reqQuery *domain.UserQuery) squirre
 	}
 
 	if reqQuery.Email != nil {
-		q = q.Where(squirrel.ILike{"email": "%" + *reqQuery.Email + "%"})
+		q = q.Where(squirrel.ILike{emailUsersColumn: "%" + *reqQuery.Email + "%"})
 	}
 
 	return q

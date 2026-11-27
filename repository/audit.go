@@ -38,7 +38,7 @@ func (r Audit) Insert(ctx context.Context, log entity.Audit) (int, error) {
 
 	query, args, err := query.New().
 		Insert("audit").
-		Columns("user_id", "message", "event", "created_at").
+		Columns(userIdAuditColumn, messageAuditColumn, eventAuditColumn, createdAtAuditColumn).
 		Values(log.UserId, log.Message, log.Event, log.CreatedAt).
 		Suffix("returning id").
 		ToSql()
@@ -134,16 +134,16 @@ func reqAuditQuery(q squirrel.SelectBuilder, reqQuery *domain.AuditQuery) squirr
 	}
 
 	if reqQuery.UserId != nil {
-		q = q.Where(squirrel.Eq{"user_id": reqQuery.UserId})
+		q = q.Where(squirrel.Eq{userIdAuditColumn: reqQuery.UserId})
 	}
 
 	if reqQuery.Message != nil {
-		q = q.Where(squirrel.ILike{"message": "%" + *reqQuery.Message + "%"})
+		q = q.Where(squirrel.ILike{messageAuditColumn: "%" + *reqQuery.Message + "%"})
 	}
 
 	if reqQuery.CreatedAt != nil {
-		q = q.Where(squirrel.GtOrEq{"created_at": reqQuery.CreatedAt.From}).
-			Where(squirrel.Lt{"created_at": reqQuery.CreatedAt.To})
+		q = q.Where(squirrel.GtOrEq{createdAtAuditColumn: reqQuery.CreatedAt.From}).
+			Where(squirrel.Lt{createdAtAuditColumn: reqQuery.CreatedAt.To})
 	}
 
 	return q

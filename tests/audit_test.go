@@ -183,7 +183,7 @@ func (s *AuditSuite) Test_SetEvents_InvalidEvent() {
 
 func (s *AuditSuite) Test_All_Logs() {
 	request := domain.AuditPageRequest{
-		LimitOffestParams: domain.LimitOffestParams{
+		LimitOffestParams: domain.LimitOffestParams{ //nolint:modernize
 			Limit:  3,
 			Offset: 5,
 		},

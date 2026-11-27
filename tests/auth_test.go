@@ -241,7 +241,7 @@ func (s *AuthTestSuite) Test_Logout_NotFound() {
 	time.Sleep(time.Second)
 	audit := repository.NewAudit(s.db)
 	auditList, err := audit.AllByRequest(s.T().Context(), domain.AuditPageRequest{
-		LimitOffestParams: domain.LimitOffestParams{
+		LimitOffestParams: domain.LimitOffestParams{ //nolint:modernize
 			Limit:  10,
 			Offset: 0,
 		},
